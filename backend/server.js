@@ -11,9 +11,12 @@ const config = require("./config/default");
 const PORT = config.port;
 
 // 변환된 파일 저장 폴더 자동 생성 (없으면 생성)
-const convertedFolder = path.join(__dirname, "uploads/converted/");
+const convertedFolder = path.resolve(__dirname, "uploads/converted/");
 if (!fs.existsSync(convertedFolder)) {
+  console.log(`📂 변환 폴더가 존재하지 않아 생성합니다: ${convertedFolder}`);
   fs.mkdirSync(convertedFolder, { recursive: true });
+} else {
+  console.log(`✅ 변환 폴더 확인됨: ${convertedFolder}`);
 }
 
 app.use(
@@ -31,11 +34,7 @@ app.use("/api", apiRoutes);
 
 // 변환된 파일 다운로드 경로 추가
 app.get("/download/:filename", (req, res) => {
-  const filePath = path.join(
-    __dirname,
-    "uploads/converted",
-    req.params.filename
-  );
+  const filePath = path.join(convertedFolder, req.params.filename);
   res.download(filePath, (err) => {
     if (err) {
       res.status(500).json({ message: "파일 다운로드 중 오류 발생" });
