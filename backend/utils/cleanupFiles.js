@@ -11,6 +11,13 @@ function cleanupOldFiles() {
     fs.mkdirSync(convertedFolder, { recursive: true });
   }
 
+  if (!fs.existsSync(convertedFolder)) {
+    console.log(
+      `📂 변환 폴더가 존재하지 않아 삭제 작업을 건너뜁니다: ${convertedFolder}`
+    );
+    return;
+  }
+
   fs.readdir(convertedFolder, (err, files) => {
     if (err) {
       console.error("❌ 변환 파일 삭제 중 오류 발생:", err);
