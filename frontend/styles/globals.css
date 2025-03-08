@@ -1,0 +1,43 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* 기본 스타일 */
+body {
+  font-family: Arial, sans-serif;
+  background: #ffffff;
+  color: #000000;
+  transition: background 0.3s ease, color 0.3s ease;
+}
+
+/* 버튼 스타일 */
+button {
+  padding: 10px 20px;
+  border: none;
+  cursor: pointer;
+  border-radius: 5px;
+  background: #007bff;
+  color: #ffffff;
+  transition: background 0.3s ease, color 0.3s ease;
+}
+
+button:hover {
+  background: #0056b3;
+}
+
+/* 입력 필드 스타일 */
+input,
+select {
+  padding: 10px;
+  border-radius: 5px;
+  border: 1px solid #ccc;
+  transition: background 0.3s ease, color 0.3s ease;
+}
+
+/* 입력 필드 포커스 효과 */
+input:focus,
+select:focus {
+  outline: none;
+  border-color: #007bff;
+  box-shadow: 0 0 5px rgba(0, 123, 255, 0.5);
+}
