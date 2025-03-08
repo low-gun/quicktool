@@ -27,7 +27,20 @@ function cleanupOldFiles() {
 
   fs.readdir(convertedFolder, (err, files) => {
     if (err) {
+      if (err.code === "ENOENT") {
+        console.log(
+          `📂 변환 폴더가 비어 있거나 존재하지 않음, 삭제 작업 건너뜀: ${convertedFolder}`
+        );
+        return;
+      }
       console.error("❌ 변환 파일 삭제 중 오류 발생:", err);
+      return;
+    }
+
+    if (files.length === 0) {
+      console.log(
+        `📂 변환 폴더는 존재하지만, 삭제할 파일이 없음: ${convertedFolder}`
+      );
       return;
     }
 
