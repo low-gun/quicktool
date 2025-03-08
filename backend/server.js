@@ -2,12 +2,19 @@ require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
 const path = require("path");
+const fs = require("fs");
 const { cleanupOldFiles } = require("./utils/cleanupFiles"); // 자동 삭제 기능 추가
 
 const app = express();
 const config = require("./config/default");
 
 const PORT = config.port;
+
+// 변환된 파일 저장 폴더 자동 생성 (없으면 생성)
+const convertedFolder = path.join(__dirname, "uploads/converted/");
+if (!fs.existsSync(convertedFolder)) {
+  fs.mkdirSync(convertedFolder, { recursive: true });
+}
 
 app.use(
   cors({
