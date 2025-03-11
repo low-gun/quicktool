@@ -22,7 +22,7 @@ export default function Login() {
     e.preventDefault();
 
     const response = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL}/users/login`,
+      `${process.env.NEXT_PUBLIC_API_URL}/api/users/login`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },

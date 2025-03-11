@@ -14,7 +14,7 @@ const storage = multer.diskStorage({
 const upload = multer({
   storage,
   limits: {
-    fileSize: 50 * 1024 * 1024, // 최대 파일 크기: 50MB
+    fileSize: 500 * 1024 * 1024, // 최대 파일 크기: 50MB
   },
   fileFilter: (req, file, cb) => {
     if (!file.mimetype) {

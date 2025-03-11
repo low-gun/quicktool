@@ -37,10 +37,10 @@ export default function AdminPage() {
     }
 
     Promise.all([
-      fetch(`${process.env.NEXT_PUBLIC_API_URL}/admin/users`, {
+      fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/admin/users`, {
         headers: { Authorization: `Bearer ${token}` },
       }).then((res) => res.json()),
-      fetch(`${process.env.NEXT_PUBLIC_API_URL}/admin/stats/visits`, {
+      fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/admin/stats/visits`, {
         headers: { Authorization: `Bearer ${token}` },
       }).then((res) => res.json()),
     ])

@@ -10,7 +10,7 @@ export default function Register() {
     e.preventDefault();
 
     const response = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL}/users/register`,
+      `${process.env.NEXT_PUBLIC_API_URL}/api/users/register`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
