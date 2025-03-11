@@ -39,15 +39,12 @@ export async function getServerSideProps() {
   let backendMessage = "백엔드 연결 실패";
 
   try {
-    const res = await fetch("http://localhost:5001/api");
-    if (res.ok) {
-      backendMessage = await res.text();
-    }
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api`);
+    const data = await res.json();
+    backendMessage = data.message;
   } catch (error) {
     console.error("Backend API 요청 실패:", error);
   }
 
-  return {
-    props: { backendMessage },
-  };
+  return { props: { backendMessage } };
 }
