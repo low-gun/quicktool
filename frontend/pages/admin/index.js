@@ -1,6 +1,6 @@
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
-import { jwtDecode } from "jwt-decode";
+import jwtDecode from "jwt-decode";
 import AdminLayout from "../../components/admin/AdminLayout";
 import {
   LineChart,
@@ -58,6 +58,7 @@ export default function AdminPage() {
         alert("데이터를 가져오는 중 오류가 발생했습니다.");
       })
       .finally(() => setIsLoading(false));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [router]);
 
   if (isLoading) {
