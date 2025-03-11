@@ -21,11 +21,13 @@ if (!fs.existsSync(convertedFolder)) {
 
 app.use(
   cors({
-    origin: "*",
+    origin: "https://www.quicktool.co.kr",
+    credentials: true, // 쿠키 등 전송 허용
     methods: ["GET", "POST", "PUT", "DELETE"],
-    allowedHeaders: ["Content-Type", "Authorization"], // ✅ Authorization 추가
+    allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
