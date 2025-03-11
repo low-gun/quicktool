@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
+import { Legend } from "recharts";
 
 export default function Login() {
   const [email, setEmail] = useState("");
