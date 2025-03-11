@@ -1,4 +1,5 @@
 import { useRouter } from "next/router";
+import Image from "next/image";
 
 const formats = [
   { name: "JPEG", type: "to-jpeg", image: "" },
@@ -69,10 +70,11 @@ export default function ConvertHome() {
             onMouseOut={(e) => (e.target.style.transform = "scale(1)")}
           >
             {format.image ? (
-              <img
+              <Image
                 src={format.image}
                 alt={format.name}
-                style={{ width: "50px", height: "50px" }}
+                width={50}
+                height={50}
               />
             ) : (
               <span>{format.name}</span>
