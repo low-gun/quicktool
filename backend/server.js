@@ -35,11 +35,11 @@ app.use("/api", apiRoutes);
 
 // ✅ 회원 API 라우트 추가
 const userRoutes = require("./routes/users");
-app.use("/users", userRoutes);
+app.use("/api/users", userRoutes);
 
 // ✅ 관리자 API 라우트 추가
 const adminRoutes = require("./routes/admin");
-app.use("/admin", adminRoutes);
+app.use("/api/admin", adminRoutes);
 
 // 변환된 파일 다운로드 경로 추가
 app.get("/download/:filename", (req, res) => {
