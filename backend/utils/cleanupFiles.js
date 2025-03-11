@@ -2,6 +2,7 @@ const fs = require("fs");
 const path = require("path");
 
 const convertedFolder = path.resolve(__dirname, "../uploads/converted/");
+const originalFolder = path.resolve(__dirname, "../uploads/original/");
 const ONE_HOUR = 60 * 60 * 1000; // 1시간 (밀리초 단위)
 
 // 변환된 파일 자동 삭제 함수

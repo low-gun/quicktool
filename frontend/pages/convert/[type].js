@@ -3,6 +3,7 @@ import { useState, useCallback } from "react";
 import { useDropzone } from "react-dropzone";
 import Layout from "../../components/layout";
 import allowedFormats from "../../utils/allowedFormats";
+
 export default function ConvertPage() {
   const router = useRouter();
   const { type } = router.query;
@@ -70,17 +71,22 @@ export default function ConvertPage() {
 
     try {
       setProgress(50);
-      const response = await fetch(`http://localhost:5001/api/${type}`, {
-        method: "POST",
-        body: formData,
-      });
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/${type}`,
+        {
+          method: "POST",
+          body: formData,
+        }
+      );
 
       const result = await response.json();
       setProgress(80);
 
       if (result.downloadUrls) {
         setDownloadUrls(
-          result.downloadUrls.map((url) => `http://localhost:5001${url}`)
+          result.downloadUrls.map(
+            (url) => `${process.env.NEXT_PUBLIC_API_URL}${url}`
+          )
         );
         setProgress(100);
       } else {

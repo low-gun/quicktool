@@ -21,16 +21,25 @@ if (!fs.existsSync(convertedFolder)) {
 
 app.use(
   cors({
-    origin: "*", // 모든 도메인 허용
+    origin: "*",
     methods: ["GET", "POST", "PUT", "DELETE"],
-    allowedHeaders: ["Content-Type"],
+    allowedHeaders: ["Content-Type", "Authorization"], // ✅ Authorization 추가
   })
 );
+
 app.use(express.json());
 
+// ✅ 기본 API 라우트 추가
 const apiRoutes = require("./routes/api");
-
 app.use("/api", apiRoutes);
+
+// ✅ 회원 API 라우트 추가
+const userRoutes = require("./routes/users");
+app.use("/users", userRoutes);
+
+// ✅ 관리자 API 라우트 추가
+const adminRoutes = require("./routes/admin");
+app.use("/admin", adminRoutes);
 
 // 변환된 파일 다운로드 경로 추가
 app.get("/download/:filename", (req, res) => {
