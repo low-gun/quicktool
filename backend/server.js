@@ -27,7 +27,8 @@ app.use(
   })
 );
 
-app.use(express.json());
+app.use(express.json({ limit: "500mb" }));
+app.use(express.urlencoded({ limit: "500mb", extended: true }));
 
 // ✅ 기본 API 라우트 추가
 const apiRoutes = require("./routes/api");
