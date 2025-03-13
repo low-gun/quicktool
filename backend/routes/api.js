@@ -14,6 +14,7 @@ const toZip = require("./to-zip");
 
 const router = express.Router();
 router.get("/status", (req, res) => {
+  console.log("✅ /api/status 요청이 들어왔습니다."); // 로그 추가
   res.json({ status: "OK", message: "API is running" });
 });
 
