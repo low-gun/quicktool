@@ -6,11 +6,11 @@ const fs = require("fs");
 const { cleanupOldFiles } = require("./utils/cleanupFiles"); // 자동 삭제 기능 추가
 
 const app = express();
-const config = require("./config/default");
 
-const PORT = config.port;
+// ✅ 포트 설정 (환경변수 또는 기본값 5001)
+const PORT = process.env.PORT || 5001;
 
-// 변환된 파일 저장 폴더 자동 생성 (없으면 생성)
+// ✅ 변환된 파일 저장 폴더 자동 생성 (없으면 생성)
 const convertedFolder = path.resolve(__dirname, "uploads/converted/");
 if (!fs.existsSync(convertedFolder)) {
   console.log(`📂 변환 폴더가 존재하지 않아 생성합니다: ${convertedFolder}`);
@@ -19,6 +19,7 @@ if (!fs.existsSync(convertedFolder)) {
   console.log(`✅ 변환 폴더 확인됨: ${convertedFolder}`);
 }
 
+// ✅ CORS 설정
 app.use(
   cors({
     origin: "https://www.quicktool.co.kr",
@@ -40,18 +41,19 @@ app.get("/download/:filename", (req, res) => {
   const filePath = path.join(convertedFolder, req.params.filename);
   res.download(filePath, (err) => {
     if (err) {
+      console.error("파일 다운로드 중 오류 발생:", err);
       res.status(500).json({ message: "파일 다운로드 중 오류 발생" });
     }
   });
 });
 
-// 서버 시작 시 즉시 실행
+// ✅ 서버 시작 시 즉시 실행 (오래된 파일 정리)
 cleanupOldFiles();
 
-// 10분마다 실행 (배포 환경에서도 지속적으로 파일 삭제)
+// ✅ 10분마다 파일 정리 실행 (배포 환경 유지)
 setInterval(cleanupOldFiles, 10 * 60 * 1000);
 
-// 🔹 HTTPS 설정 제거, HTTP로만 실행
+// ✅ 서버 실행 (HTTP 사용)
 app.listen(PORT, () => {
   console.log(`✅ Server is running on http://localhost:${PORT}`);
 });
