@@ -13,6 +13,9 @@ const toTxt = require("./to-txt");
 const toZip = require("./to-zip");
 
 const router = express.Router();
+router.get("/status", (req, res) => {
+  res.json({ status: "OK", message: "API is running" });
+});
 
 router.use("/to-jpeg", toJpeg);
 router.use("/to-png", toPng);
