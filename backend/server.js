@@ -73,7 +73,6 @@ if (process.env.NODE_ENV === "production") {
     console.log("✅ Secure Server is running on https://localhost:5001");
   });
 } else {
-  // 🔹 로컬 환경에서는 기존 HTTP 유지
   app.listen(PORT, () => {
     console.log(`✅ Server is running on http://localhost:${PORT}`);
   });
