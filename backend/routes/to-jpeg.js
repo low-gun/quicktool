@@ -9,6 +9,7 @@ const router = express.Router();
 // 허용된 파일 형식 (JPG, PNG, GIF, BMP, TIFF만 가능)
 const allowedFormats = [
   "image/png",
+  "image/jpeg",
   "image/svg+xml",
   "image/gif",
   "image/bmp",

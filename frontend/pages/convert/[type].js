@@ -1,5 +1,5 @@
 import { useRouter } from "next/router";
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react"; // 변경: useRef 추가
 import { useDropzone } from "react-dropzone";
 import Layout from "../../components/layout";
 import allowedFormats from "../../utils/allowedFormats";
@@ -11,6 +11,10 @@ export default function ConvertPage() {
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [downloadUrls, setDownloadUrls] = useState([]);
   const [progress, setProgress] = useState(0);
+
+  // 변경: 진행률 시뮬레이션 interval 보관용
+  const progressIntervalRef = useRef(null);
+
   const [isConverting, setIsConverting] = useState(false);
 
   const onDrop = useCallback(
@@ -57,6 +61,35 @@ export default function ConvertPage() {
     setSelectedFiles((prevFiles) => prevFiles.filter((_, i) => i !== index));
   };
 
+  // 변경: 시뮬레이션 진행률 시작
+  const startProgressSimulation = () => {
+    // 혹시 남아있던 interval이 있으면 중단
+    if (progressIntervalRef.current) {
+      clearInterval(progressIntervalRef.current);
+      progressIntervalRef.current = null;
+    }
+
+    setProgress(0);
+    progressIntervalRef.current = setInterval(() => {
+      setProgress((prev) => {
+        // 90까지만 서서히 증가
+        if (prev < 90) {
+          return prev + 5;
+        } else {
+          return prev;
+        }
+      });
+    }, 300);
+  };
+
+  // 변경: 시뮬레이션 진행률 중단
+  const stopProgressSimulation = () => {
+    if (progressIntervalRef.current) {
+      clearInterval(progressIntervalRef.current);
+      progressIntervalRef.current = null;
+    }
+  };
+
   const handleConvert = async () => {
     if (selectedFiles.length === 0) {
       alert("파일을 선택해주세요.");
@@ -64,13 +97,16 @@ export default function ConvertPage() {
     }
 
     setIsConverting(true);
-    setProgress(20);
+
+    // 변경: 시뮬레이션 시작
+    startProgressSimulation();
 
     const formData = new FormData();
     selectedFiles.forEach((file) => formData.append("files", file));
 
     try {
-      setProgress(50);
+      // 기존의 setProgress(20), setProgress(50), setProgress(80) 제거
+
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_API_URL}/api/${type}`,
         {
@@ -80,7 +116,9 @@ export default function ConvertPage() {
       );
 
       const result = await response.json();
-      setProgress(80);
+
+      // 변경: 시뮬레이션 중단
+      stopProgressSimulation();
 
       if (result.downloadUrls) {
         setDownloadUrls(
@@ -88,6 +126,8 @@ export default function ConvertPage() {
             (url) => `${process.env.NEXT_PUBLIC_API_URL}${url}`
           )
         );
+
+        // 변경: 최종 완료 시 100
         setProgress(100);
       } else {
         alert("변환에 실패했습니다.");
@@ -95,6 +135,9 @@ export default function ConvertPage() {
       }
     } catch (error) {
       console.error(error);
+
+      // 변경: 중단
+      stopProgressSimulation();
       setProgress(0);
     } finally {
       setTimeout(() => setIsConverting(false), 500);
@@ -109,14 +152,17 @@ export default function ConvertPage() {
         {type ? `${type.toUpperCase()}` : "로딩 중..."}
       </h1>
 
+      {/* 드롭존 박스: width, maxWidth, margin 추가 */}
       <div
         {...getRootProps()}
         style={{
+          width: "100%",
+          maxWidth: "770px",
+          margin: "0 auto 20px",
           border: "2px dashed #ddd",
           padding: "30px",
           cursor: "pointer",
           background: "#ffffff",
-          marginBottom: "20px",
           borderRadius: "10px",
           transition: "border 0.3s",
         }}
@@ -208,8 +254,9 @@ export default function ConvertPage() {
               }}
             />
           </div>
+          {/* 변경: '%' 제거 */}
           <p style={{ fontSize: "16px", marginTop: "10px" }}>
-            변환 진행률: {progress}%
+            변환 진행률: {progress}
           </p>
         </div>
       )}
