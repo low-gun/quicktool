@@ -3,7 +3,6 @@ const express = require("express");
 const cors = require("cors");
 const path = require("path");
 const fs = require("fs");
-const https = require("https"); // 🔹 HTTPS 모듈 추가
 const { cleanupOldFiles } = require("./utils/cleanupFiles"); // 자동 삭제 기능 추가
 
 const app = express();
@@ -32,19 +31,11 @@ app.use(
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// ✅ 기본 API 라우트 추가
+// ✅ API 라우트 추가
 const apiRoutes = require("./routes/api");
 app.use("/api", apiRoutes);
 
-// ✅ 회원 API 라우트 추가
-const userRoutes = require("./routes/users");
-app.use("/api/users", userRoutes);
-
-// ✅ 관리자 API 라우트 추가
-const adminRoutes = require("./routes/admin");
-app.use("/api/admin", adminRoutes);
-
-// 변환된 파일 다운로드 경로 추가
+// ✅ 변환된 파일 다운로드 경로 추가
 app.get("/download/:filename", (req, res) => {
   const filePath = path.join(convertedFolder, req.params.filename);
   res.download(filePath, (err) => {
@@ -60,20 +51,7 @@ cleanupOldFiles();
 // 10분마다 실행 (배포 환경에서도 지속적으로 파일 삭제)
 setInterval(cleanupOldFiles, 10 * 60 * 1000);
 
-// 🔹 HTTPS 적용 (배포 환경에서만 실행)
-if (process.env.NODE_ENV === "production") {
-  const options = {
-    key: fs.readFileSync("/etc/letsencrypt/live/quicktool.co.kr/privkey.pem"),
-    cert: fs.readFileSync(
-      "/etc/letsencrypt/live/quicktool.co.kr/fullchain.pem"
-    ),
-  };
-
-  https.createServer(options, app).listen(5001, () => {
-    console.log("✅ Secure Server is running on https://localhost:5001");
-  });
-} else {
-  app.listen(PORT, () => {
-    console.log(`✅ Server is running on http://localhost:${PORT}`);
-  });
-}
+// 🔹 HTTPS 설정 제거, HTTP로만 실행
+app.listen(PORT, () => {
+  console.log(`✅ Server is running on http://localhost:${PORT}`);
+});
