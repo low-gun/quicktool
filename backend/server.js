@@ -36,6 +36,12 @@ app.use(express.urlencoded({ extended: true }));
 const apiRoutes = require("./routes/api");
 app.use("/api", apiRoutes);
 
+// (신규) 사용자, 관리자 라우트 등록
+const userRoutes = require("./routes/users");
+const adminRoutes = require("./routes/admin");
+app.use("/api/users", userRoutes);
+app.use("/api/admin", adminRoutes);
+
 // ✅ 변환된 파일 다운로드 경로 추가
 app.get("/download/:filename", (req, res) => {
   const filePath = path.join(convertedFolder, req.params.filename);
