@@ -44,6 +44,7 @@ app.use("/api/admin", adminRoutes);
 
 // ✅ 변환된 파일 다운로드 경로 추가
 app.get("/download/:filename", (req, res) => {
+  console.log("다운로드 요청 파일:", req.params.filename);
   const originalFilename = req.params.filename;
   const filePath = path.join(convertedFolder, originalFilename);
 
