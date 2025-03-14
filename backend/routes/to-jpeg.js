@@ -34,9 +34,15 @@ router.post("/", upload.array("files"), async (req, res) => {
           .json({ message: `지원되지 않는 파일 형식입니다: ${file.mimetype}` });
       }
 
-      const outputFileName = `${path
+      // (1) 한글(가-힣), 영어, 숫자, 대시, 언더바만 남김
+      const sanitizedName = path
         .parse(file.originalname)
-        .name.replace(/[^a-zA-Z0-9-_]/g, "")}.jpeg`;
+        .name.replace(/[^a-zA-Z0-9가-힣-_]/g, "");
+
+      // (2) .jpeg 확장자를 붙여 최종 파일명 생성
+      const outputFileName = `${sanitizedName}.jpeg`;
+
+      // (3) 디스크 저장 경로
       const outputFilePath = `uploads/converted/${outputFileName}`;
 
       // await sharp(file.path).toFormat("jpeg").toFile(outputFilePath);
