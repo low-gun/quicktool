@@ -1,26 +1,23 @@
 const multer = require("multer");
 const path = require("path");
 
-// 한글 깨짐 방지를 위한 파일명 처리 함수
-const processFileName = (originalName) => {
+// 한글 유니코드 정규화 (NFD → NFC)
+const normalizeFileName = (fileName) => {
   try {
-    let decodedName = Buffer.from(originalName, "latin1").toString("utf-8"); // Latin-1 → UTF-8 변환
-    decodedName = decodeURIComponent(decodedName); // URL 인코딩된 경우 복원
-    return decodedName.replace(/[<>:"/\\|?*]+/g, ""); // 특수문자 제거
+    return fileName.normalize("NFC"); // macOS에서 깨지는 한글을 정규화
   } catch (error) {
-    console.error("파일명 변환 오류:", error);
-    return "converted"; // 변환 실패 시 기본 이름 할당
+    console.error("파일명 정규화 오류:", error);
+    return "converted"; // 오류 발생 시 기본 파일명
   }
 };
 
-// 파일 저장 위치 설정
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     cb(null, "backend/uploads/original/");
   },
   filename: (req, file, cb) => {
-    const processedFileName = processFileName(file.originalname);
-    cb(null, `${Date.now()}-${processedFileName}`);
+    const normalizedFileName = normalizeFileName(file.originalname);
+    cb(null, `${Date.now()}-${normalizedFileName}`);
   },
 });
 
