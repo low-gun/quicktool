@@ -24,8 +24,10 @@ const storage = multer.diskStorage({
     cb(null, uploadPath);
   },
   filename: (req, file, cb) => {
-    const sanitizedFileName = sanitizeFileName(file.originalname);
-    const finalFileName = `${Date.now()}-${sanitizedFileName}.jpeg`; // ✅ 유니크한 파일명 보장
+    const baseName = path.parse(file.originalname).name; // ✅ 파일명에서 확장자 제거
+    const extension = path.extname(file.originalname); // ✅ 확장자 보존
+    const sanitizedFileName = sanitizeFileName(baseName);
+    const finalFileName = `${Date.now()}-${sanitizedFileName}${extension}`; // ✅ 원본 확장자 유지
     cb(null, finalFileName);
   },
 });
