@@ -5,10 +5,12 @@ const fs = require("fs");
 // ✅ 한글 깨짐 방지 및 특수문자 제거
 const sanitizeFileName = (fileName) => {
   try {
-    return fileName.normalize("NFC").replace(/[^a-zA-Z0-9가-힣-_ ]/g, ""); // ✅ 특수문자 제거
+    // ✅ multer에서 한글이 깨지는 문제 해결 (latin1 → utf8 변환)
+    const decodedName = Buffer.from(fileName, "latin1").toString("utf8");
+    return decodedName.normalize("NFC").replace(/[^a-zA-Z0-9가-힣-_ ]/g, "");
   } catch (error) {
     console.error("파일명 정규화 오류:", error);
-    return "converted"; // 오류 발생 시 기본 파일명
+    return "converted";
   }
 };
 
@@ -24,15 +26,8 @@ const storage = multer.diskStorage({
     cb(null, path.join(__dirname, "../uploads/original/"));
   },
   filename: (req, file, cb) => {
-    let originalName = file.originalname; // ✅ 원본 파일명 그대로 유지
-    originalName = originalName.replace(/\.[^/.]+$/, ""); // ✅ 확장자 제거
-    const sanitizedFileName = originalName.replace(/[^a-zA-Z0-9가-힣-_ ]/g, ""); // ✅ 특수문자 제거
-
-    if (!sanitizedFileName) {
-      cb(null, "converted.jpeg"); // ✅ 파일명이 사라지면 기본값 적용
-    } else {
-      cb(null, `${sanitizedFileName}.jpeg`); // ✅ 원본 파일명 유지 + 확장자 강제 변경
-    }
+    const sanitizedFileName = sanitizeFileName(file.originalname); // ✅ 한글 변환 후 파일명 정리
+    cb(null, `${sanitizedFileName}.jpeg`);
   },
 });
 
