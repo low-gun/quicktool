@@ -101,7 +101,7 @@ export default function ConvertPage() {
 
     const formData = new FormData();
     selectedFiles.forEach((file) => {
-      formData.append("files", file, encodeURIComponent(file.name)); // ✅ 파일명을 인코딩하여 전송
+      formData.append("files", file, encodeURIComponent(file.name)); // ✅ 한글 파일명 인코딩
     });
 
     try {
