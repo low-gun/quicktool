@@ -1,10 +1,10 @@
 const multer = require("multer");
 const path = require("path");
 
-// ✅ 한글 파일명 깨짐 방지 (latin1 제거)
-const normalizeFileName = (fileName) => {
+// ✅ 한글 깨짐 방지 + 특수문자 제거
+const sanitizeFileName = (fileName) => {
   try {
-    return fileName.normalize("NFC"); // macOS에서 깨지는 한글 정규화
+    return fileName.normalize("NFC").replace(/[^a-zA-Z0-9가-힣-_ ]/g, ""); // 특수문자 제거
   } catch (error) {
     console.error("파일명 정규화 오류:", error);
     return "converted"; // 오류 발생 시 기본 파일명
@@ -16,8 +16,9 @@ const storage = multer.diskStorage({
     cb(null, path.join(__dirname, "../uploads/original/")); // ✅ 절대경로 사용
   },
   filename: (req, file, cb) => {
-    const normalizedFileName = normalizeFileName(file.originalname);
-    cb(null, normalizedFileName); // ✅ Date.now() 없이 원본 파일명 유지
+    const sanitizedFileName = sanitizeFileName(file.originalname);
+    const finalFileName = `${Date.now()}-${sanitizedFileName}`; // ✅ 유니크한 파일명 보장
+    cb(null, finalFileName);
   },
 });
 

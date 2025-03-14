@@ -33,10 +33,10 @@ router.post("/", upload.array("files"), async (req, res) => {
           .json({ message: `지원되지 않는 파일 형식입니다: ${file.mimetype}` });
       }
 
-      // ✅ 파일명을 정리하여 변환 파일명으로 사용
-      const sanitizedName = path
-        .parse(file.originalname)
-        .name.replace(/[^a-zA-Z0-9가-힣-_ ]/g, "");
+      // ✅ multerConfig.js에서 파일명을 변경했으므로, 저장된 파일명을 그대로 사용해야 함.
+      const originalFilePath = file.path; // ✅ multer에서 저장된 실제 파일 경로
+      const sanitizedName = path.parse(file.filename).name; // ✅ multer에서 저장된 파일명 그대로 사용
+
       if (!sanitizedName) {
         sanitizedName = "converted";
       }
@@ -49,12 +49,12 @@ router.post("/", upload.array("files"), async (req, res) => {
       );
 
       // ✅ 파일이 실제 존재하는지 확인 후 변환 실행
-      if (!fs.existsSync(file.path)) {
-        console.error("❌ 변환할 원본 파일이 존재하지 않음:", file.path);
+      if (!fs.existsSync(originalFilePath)) {
+        console.error("❌ 변환할 원본 파일이 존재하지 않음:", originalFilePath);
         return res.status(500).json({ message: "파일이 존재하지 않습니다." });
       }
 
-      await sharp(file.path)
+      await sharp(originalFilePath)
         .jpeg({ quality: 80, mozjpeg: true })
         .toFile(outputFilePath);
       convertedFiles.push(`/download/${outputFileName}`);
