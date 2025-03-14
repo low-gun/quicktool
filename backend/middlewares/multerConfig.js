@@ -21,13 +21,12 @@ if (!fs.existsSync(uploadPath)) {
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, uploadPath);
+    cb(null, path.join(__dirname, "../uploads/original/"));
   },
   filename: (req, file, cb) => {
-    const baseName = path.parse(file.originalname).name; // ✅ 파일명에서 확장자 제거
-    const extension = path.extname(file.originalname); // ✅ 확장자 보존
-    const sanitizedFileName = sanitizeFileName(baseName);
-    const finalFileName = `${Date.now()}-${sanitizedFileName}${extension}`; // ✅ 원본 확장자 유지
+    const originalName = path.parse(file.originalname).name; // 원본 파일명 유지
+    const sanitizedFileName = originalName.replace(/[^a-zA-Z0-9가-힣-_ ]/g, ""); // 특수문자 제거
+    const finalFileName = `${Date.now()}-${sanitizedFileName}.jpeg`; // 확장자 무조건 .jpeg로
     cb(null, finalFileName);
   },
 });
