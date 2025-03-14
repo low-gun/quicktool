@@ -44,10 +44,22 @@ app.use("/api/admin", adminRoutes);
 
 // ✅ 변환된 파일 다운로드 경로 추가
 app.get("/download/:filename", (req, res) => {
-  const filePath = path.join(convertedFolder, req.params.filename);
-  res.download(filePath, (err) => {
+  const originalFilename = req.params.filename;
+  const filePath = path.join(convertedFolder, originalFilename);
+
+  // 한글 파일명 처리
+  res.setHeader(
+    "Content-Disposition",
+    `attachment; filename="dummy"; filename*=UTF-8''${encodeURIComponent(
+      originalFilename
+    )}`
+  );
+  res.setHeader("Content-Type", "application/octet-stream");
+
+  // 실제 파일 다운로드
+  res.download(filePath, originalFilename, (err) => {
     if (err) {
-      console.error("파일 다운로드 중 오류 발생:", err);
+      console.error("파일 다운로드 중 오류:", err);
       res.status(500).json({ message: "파일 다운로드 중 오류 발생" });
     }
   });

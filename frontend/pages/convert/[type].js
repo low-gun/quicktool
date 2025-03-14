@@ -180,6 +180,7 @@ export default function ConvertPage() {
             maxWidth: "770px",
             margin: "0 auto 20px auto",
             padding: "15px",
+            paddingRight: "0px",
             background: "#ffffff",
             borderRadius: "8px",
             boxShadow: "0px 2px 4px rgba(0,0,0,0.1)",
