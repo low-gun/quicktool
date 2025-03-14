@@ -265,6 +265,7 @@ export default function ConvertPage() {
       {downloadUrls.length > 0 && (
         <div style={{ marginTop: "20px" }}>
           <h3 style={{ fontWeight: "bold" }}>다운로드:</h3>
+          console.log("🚀 다운로드 URL 리스트:", downloadUrls);
           {downloadUrls.map((url, index) => (
             <div key={index}>
               <a href={encodeURI(url)} download>
