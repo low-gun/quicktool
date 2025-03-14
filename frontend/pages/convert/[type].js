@@ -97,16 +97,14 @@ export default function ConvertPage() {
     }
 
     setIsConverting(true);
-
-    // 변경: 시뮬레이션 시작
     startProgressSimulation();
 
     const formData = new FormData();
-    selectedFiles.forEach((file) => formData.append("files", file));
+    selectedFiles.forEach((file) => {
+      formData.append("files", file, encodeURIComponent(file.name)); // ✅ 파일명을 인코딩하여 전송
+    });
 
     try {
-      // 기존의 setProgress(20), setProgress(50), setProgress(80) 제거
-
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_API_URL}/api/${type}`,
         {
@@ -116,8 +114,6 @@ export default function ConvertPage() {
       );
 
       const result = await response.json();
-
-      // 변경: 시뮬레이션 중단
       stopProgressSimulation();
 
       if (result.downloadUrls) {
@@ -126,8 +122,6 @@ export default function ConvertPage() {
             (url) => `${process.env.NEXT_PUBLIC_API_URL}${url}`
           )
         );
-
-        // 변경: 최종 완료 시 100
         setProgress(100);
       } else {
         alert("변환에 실패했습니다.");
@@ -135,8 +129,6 @@ export default function ConvertPage() {
       }
     } catch (error) {
       console.error(error);
-
-      // 변경: 중단
       stopProgressSimulation();
       setProgress(0);
     } finally {
@@ -265,7 +257,6 @@ export default function ConvertPage() {
       {downloadUrls.length > 0 && (
         <div style={{ marginTop: "20px" }}>
           <h3 style={{ fontWeight: "bold" }}>다운로드:</h3>
-          console.log("🚀 다운로드 URL 리스트:", downloadUrls);
           {downloadUrls.map((url, index) => (
             <div key={index}>
               <a href={encodeURI(url)} download>
