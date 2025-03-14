@@ -7,14 +7,22 @@ const storage = multer.diskStorage({
     cb(null, "uploads/original/");
   },
   filename: (req, file, cb) => {
-    cb(null, Date.now() + "-" + file.originalname);
+    // ✅ 파일명을 UTF-8로 변환하여 저장
+    const utf8FileName = Buffer.from(file.originalname, "binary").toString(
+      "utf-8"
+    );
+
+    // ✅ 특수문자 제거 (파일명 문제 방지)
+    const sanitizedFileName = utf8FileName.replace(/[<>:"/\\|?*]+/g, "");
+
+    cb(null, Date.now() + "-" + sanitizedFileName);
   },
 });
 
 const upload = multer({
   storage,
   limits: {
-    fileSize: 500 * 1024 * 1024, // 최대 파일 크기: 50MB
+    fileSize: 500 * 1024 * 1024, // 최대 파일 크기: 500MB
   },
   fileFilter: (req, file, cb) => {
     if (!file.mimetype) {
