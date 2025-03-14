@@ -19,7 +19,7 @@ jobs:
 
       - name: Deploy to Lightsail
         run: |
-          ssh -o StrictHostKeyChecking=no ubuntu@<YOUR_LIGHTSAIL_IP> << 'ENDSSH'
+          ssh -o StrictHostKeyChecking=no ubuntu@43.201.97.23 << 'ENDSSH'
             cd /home/ubuntu/quicktool
             git pull origin main
             npm install
