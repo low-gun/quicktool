@@ -39,6 +39,7 @@ router.post("/", upload.array("files"), async (req, res) => {
         .parse(file.originalname)
         .name.replace(/[^a-zA-Z0-9가-힣-_]/g, "");
 
+      console.log("정규식 처리 후:", sanitizedName); // 추가
       // (2) .jpeg 확장자를 붙여 최종 파일명 생성
       const outputFileName = `${sanitizedName}.jpeg`;
 
