@@ -267,7 +267,7 @@ export default function ConvertPage() {
           <h3 style={{ fontWeight: "bold" }}>다운로드:</h3>
           {downloadUrls.map((url, index) => (
             <div key={index}>
-              <a href={url} download>
+              <a href={encodeURI(url)} download>
                 파일 {index + 1} 다운로드
               </a>
             </div>
