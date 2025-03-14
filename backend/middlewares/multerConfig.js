@@ -1,7 +1,7 @@
 const multer = require("multer");
 const path = require("path");
 
-// 파일명 정규화 (한글 깨짐 방지)
+// 한글 깨짐 방지를 위한 파일명 정규화
 const normalizeFileName = (fileName) => {
   try {
     return Buffer.from(fileName, "latin1").toString("utf-8").normalize("NFC");
@@ -17,7 +17,7 @@ const storage = multer.diskStorage({
   },
   filename: (req, file, cb) => {
     const normalizedFileName = normalizeFileName(file.originalname);
-    cb(null, `${Date.now()}-${normalizedFileName}`);
+    cb(null, normalizedFileName); // ❌ Date.now() 제거 → 원래 파일명 그대로 저장
   },
 });
 
