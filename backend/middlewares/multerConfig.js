@@ -4,7 +4,7 @@ const path = require("path");
 // ✅ 한글 유니코드 정규화 (NFD → NFC)
 const normalizeFileName = (fileName) => {
   try {
-    return fileName.normalize("NFC"); // macOS에서 깨지는 한글을 정규화
+    return Buffer.from(fileName, "latin1").toString("utf-8").normalize("NFC");
   } catch (error) {
     console.error("파일명 정규화 오류:", error);
     return "converted"; // 오류 발생 시 기본 파일명
@@ -13,7 +13,7 @@ const normalizeFileName = (fileName) => {
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, "backend/uploads/original/");
+    cb(null, path.join(__dirname, "../uploads/original/")); // ✅ 절대경로 사용
   },
   filename: (req, file, cb) => {
     const normalizedFileName = normalizeFileName(file.originalname);

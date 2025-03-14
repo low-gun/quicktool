@@ -39,7 +39,7 @@ router.post("/", upload.array("files"), async (req, res) => {
       //   \ / : * ? " < > |
       const sanitizedName = path
         .parse(file.originalname)
-        .name.replace(/[\\\/:\*\?"<>\|]/g, "");
+        .name.replace(/[^a-zA-Z0-9가-힣-_ ]/g, ""); // ✅ 한글, 영문, 숫자, 대시(-), 공백 유지
 
       // 그 외의 한글, 영어, 일본어, 중국어, 이모지, 공백 등은 모두 남음
       // 파일명이 전부 제거되어 빈 문자열이 되면 대체명을 할당하기
