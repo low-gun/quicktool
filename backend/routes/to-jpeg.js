@@ -35,12 +35,18 @@ router.post("/", upload.array("files"), async (req, res) => {
       }
 
       // (1) 한글(가-힣), 영어, 숫자, 대시, 언더바만 남김
+      // Windows에서 금지되는 특수문자만 제거
+      //   \ / : * ? " < > |
       const sanitizedName = path
         .parse(file.originalname)
-        .name.replace(/[^a-zA-Z0-9가-힣-_]/g, "");
+        .name.replace(/[\\\/:\*\?"<>\|]/g, "");
 
-      console.log("정규식 처리 후:", sanitizedName); // 추가
-      // (2) .jpeg 확장자를 붙여 최종 파일명 생성
+      // 그 외의 한글, 영어, 일본어, 중국어, 이모지, 공백 등은 모두 남음
+      // 파일명이 전부 제거되어 빈 문자열이 되면 대체명을 할당하기
+      if (!sanitizedName) {
+        sanitizedName = "converted";
+      }
+
       const outputFileName = `${sanitizedName}.jpeg`;
 
       // (3) 디스크 저장 경로
