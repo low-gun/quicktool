@@ -24,9 +24,15 @@ const storage = multer.diskStorage({
     cb(null, path.join(__dirname, "../uploads/original/"));
   },
   filename: (req, file, cb) => {
-    const originalName = path.parse(file.originalname).name; // ✅ 원본 파일명 유지
+    let originalName = file.originalname; // ✅ 원본 파일명 그대로 유지
+    originalName = originalName.replace(/\.[^/.]+$/, ""); // ✅ 확장자 제거
     const sanitizedFileName = originalName.replace(/[^a-zA-Z0-9가-힣-_ ]/g, ""); // ✅ 특수문자 제거
-    cb(null, `${sanitizedFileName}.jpeg`); // ✅ 원본 파일명 유지 + 확장자 강제 변경
+
+    if (!sanitizedFileName) {
+      cb(null, "converted.jpeg"); // ✅ 파일명이 사라지면 기본값 적용
+    } else {
+      cb(null, `${sanitizedFileName}.jpeg`); // ✅ 원본 파일명 유지 + 확장자 강제 변경
+    }
   },
 });
 
