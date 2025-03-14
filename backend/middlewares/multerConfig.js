@@ -1,43 +1,37 @@
-router.post("/", upload.array("files"), async (req, res) => {
-  if (!req.files || req.files.length === 0) {
-    return res.status(400).json({ message: "파일이 업로드되지 않았습니다." });
-  }
+const multer = require("multer");
+const path = require("path");
 
+// 한글 유니코드 정규화 (NFD → NFC)
+const normalizeFileName = (fileName) => {
   try {
-    const convertedFiles = [];
-
-    for (const file of req.files) {
-      console.log("📂 업로드된 원본 파일명:", file.originalname);
-
-      let sanitizedName;
-      try {
-        // ✅ UTF-8 정규화 (NFD → NFC)
-        sanitizedName = file.originalname.normalize("NFC");
-      } catch (err) {
-        console.error("❌ 파일명 정규화 실패:", err);
-        sanitizedName = "converted"; // 변환 실패 시 기본값
-      }
-
-      console.log("📝 정규화된 파일명:", sanitizedName);
-      const outputFileName = `${sanitizedName}.jpeg`;
-      const outputFilePath = `backend/uploads/converted/${outputFileName}`;
-
-      await sharp(file.path)
-        .jpeg({ quality: 80, mozjpeg: true })
-        .toFile(outputFilePath);
-      console.log("✅ 파일 변환 완료:", outputFilePath);
-
-      convertedFiles.push(`/download/${outputFileName}`);
-    }
-
-    res.json({
-      message: "파일 → JPEG 변환 성공!",
-      downloadUrls: convertedFiles,
-    });
+    return fileName.normalize("NFC"); // macOS에서 깨지는 한글을 정규화
   } catch (error) {
-    console.error("❌ 파일 변환 중 오류 발생:", error);
-    res
-      .status(500)
-      .json({ message: "파일 변환 중 오류 발생", error: error.message });
+    console.error("파일명 정규화 오류:", error);
+    return "converted"; // 오류 발생 시 기본 파일명
   }
+};
+
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, "backend/uploads/original/");
+  },
+  filename: (req, file, cb) => {
+    const normalizedFileName = normalizeFileName(file.originalname);
+    cb(null, `${Date.now()}-${normalizedFileName}`);
+  },
 });
+
+const upload = multer({
+  storage,
+  limits: {
+    fileSize: 500 * 1024 * 1024, // 최대 파일 크기: 500MB
+  },
+  fileFilter: (req, file, cb) => {
+    if (!file.mimetype) {
+      return cb(new Error("유효하지 않은 파일 형식입니다."), false);
+    }
+    cb(null, true);
+  },
+});
+
+module.exports = { upload };
