@@ -21,9 +21,23 @@ jobs:
         run: |
           ssh -o StrictHostKeyChecking=no ubuntu@43.201.97.23 << 'ENDSSH'
             cd /home/ubuntu/quicktool
+            # 1) 최신 코드 받아오기
             git pull origin main
+
+            # 2) 백엔드 의존성 설치
+            cd /home/ubuntu/quicktool/backend
             npm install
+
+            # 3) 백엔드 서버 재시작
             pm2 restart quicktool-backend
+
+            # 4) 프론트엔드 빌드
+            cd /home/ubuntu/quicktool/frontend
+            npm install
+            npm run build
+
+            # 5) 프론트엔드 재시작 (SSR일 경우 pm2, SPA일 경우 Nginx 등)
             pm2 restart quicktool-frontend
+
             exit
           ENDSSH
