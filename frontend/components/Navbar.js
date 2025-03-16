@@ -34,7 +34,6 @@ export default function Navbar() {
         alignItems: "center",
         padding: "15px 20px",
         background: "#ffffff",
-        boxShadow: "0px 2px 4px rgba(0, 0, 0, 0.1)",
       }}
     >
       <button
@@ -76,8 +75,7 @@ export default function Navbar() {
               borderRadius: "5px",
               border: "none",
               cursor: "pointer",
-              background: "#dc3545",
-              color: "#fff",
+              color: "#007bff",
             }}
           >
             로그아웃

@@ -2,12 +2,10 @@ const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
 
-// ✅ 한글 깨짐 방지 및 특수문자 제거
+// ✅ 파일명에서 특수문자 제거 함수
 const sanitizeFileName = (fileName) => {
   try {
-    // ✅ multer에서 한글이 깨지는 문제 해결 (latin1 → utf8 변환)
-    const decodedName = Buffer.from(fileName, "latin1").toString("utf8");
-    return decodedName.normalize("NFC").replace(/[^a-zA-Z0-9가-힣-_ ]/g, "");
+    return fileName.replace(/[^a-zA-Z0-9가-힣-_ ]/g, "") || "converted"; // 파일명이 비면 기본값
   } catch (error) {
     console.error("파일명 정규화 오류:", error);
     return "converted";
@@ -23,19 +21,26 @@ if (!fs.existsSync(uploadPath)) {
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, path.join(__dirname, "../uploads/original/"));
+    cb(null, uploadPath);
   },
   filename: (req, file, cb) => {
-    const sanitizedFileName = sanitizeFileName(file.originalname); // ✅ 한글 변환 후 파일명 정리
-    cb(null, `${sanitizedFileName}.jpeg`);
+    const isKorean = /[가-힣]/.test(file.originalname); // ✅ 한글 포함 여부 확인
+    const baseName = isKorean
+      ? "converted"
+      : sanitizeFileName(path.parse(file.originalname).name); // ✅ 한글이면 'converted'
+    const extension = path.extname(file.originalname); // ✅ 원본 확장자 유지
+    cb(null, `${baseName}${extension}`); // ✅ 원본 확장자 유지하면서 파일 저장
   },
 });
 
 const upload = multer({
   storage,
-  limits: { fileSize: 500 * 1024 * 1024 }, // 500MB 제한
+  limits: { fileSize: 200 * 1024 * 1024 }, // ✅ 개별 파일 크기 200MB 제한
   fileFilter: (req, file, cb) => {
+    console.log("✅ fileFilter 실행됨!");
+    console.log("✅ 업로드 시도 파일 타입:", file.mimetype);
     if (!file.mimetype) {
+      console.error("❌ 파일이 거부됨:", file.originalname);
       return cb(new Error("유효하지 않은 파일 형식입니다."), false);
     }
     cb(null, true);

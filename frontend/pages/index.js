@@ -7,7 +7,7 @@ export default function Home({ backendMessage }) {
   return (
     <Layout>
       <h1 style={{ fontSize: "32px", fontWeight: "bold", color: "#333" }}>
-        QuickTool - 파일 변환 서비스
+        🚧 준비중 🚧
       </h1>
       <p style={{ fontSize: "18px", color: "#555" }}>
         원하는 파일 형식으로 쉽게 변환하세요!

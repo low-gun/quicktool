@@ -1,19 +1,35 @@
 import { useRouter } from "next/router";
 import Image from "next/image";
 
+// 변환 가능한 파일 형식 목록 (현재 구현된 기능만 포함, image는 "" 처리)
 const formats = [
+  // 이미지 먼저
   { name: "JPEG", type: "to-jpeg", image: "" },
   { name: "PNG", type: "to-png", image: "" },
   { name: "GIF", type: "to-gif", image: "" },
-  { name: "TIFF", type: "to-tiff", image: "" },
-  { name: "BMP", type: "to-bmp", image: "" },
+  { name: "HEIC", type: "to-heic", image: "" },
   { name: "WEBP", type: "to-webp", image: "" },
   { name: "SVG", type: "to-svg", image: "" },
-  { name: "HEIC", type: "to-heic", image: "" },
+  { name: "TIFF", type: "to-tiff", image: "" },
+  { name: "BMP", type: "to-bmp", image: "" },
+  // 나머지 순서 그대로
   { name: "PDF", type: "to-pdf", image: "" },
   { name: "DOCX", type: "to-docx", image: "" },
-  { name: "TXT", type: "to-txt", image: "" },
+  { name: "EXCEL", type: "to-excel", image: "" },
+  { name: "PPT", type: "to-ppt", image: "" },
+  { name: "MP4", type: "to-mp4", image: "" },
+  { name: "MP3", type: "to-mp3", image: "" },
+  { name: "WAV", type: "to-wav", image: "" },
   { name: "ZIP", type: "to-zip", image: "" },
+  { name: "CSV", type: "to-csv", image: "" },
+  { name: "JSON", type: "to-json", image: "" },
+  { name: "XML", type: "to-xml", image: "" },
+  { name: "YAML", type: "to-yaml", image: "" },
+  { name: "WEBM", type: "to-webm", image: "" },
+  { name: "MOV", type: "to-mov", image: "" },
+  { name: "AVI", type: "to-avi", image: "" },
+  { name: "MKV", type: "to-mkv", image: "" },
+  { name: "TXT", type: "to-txt", image: "" },
 ];
 
 export default function ConvertHome() {
@@ -28,25 +44,28 @@ export default function ConvertHome() {
       style={{
         textAlign: "center",
         marginTop: "50px",
-        background: "#f4f4f4",
-        padding: "20px",
-        borderRadius: "10px",
-        boxShadow: "0px 4px 6px rgba(0, 0, 0, 0.1)",
+        background: "#f9f9f9",
+        padding: "30px",
+        borderRadius: "12px",
+        boxShadow: "0px 4px 8px rgba(0, 0, 0, 0.1)",
+        maxWidth: "900px",
+        margin: "auto",
       }}
     >
-      <h1 style={{ fontSize: "28px", fontWeight: "bold", color: "#333" }}>
-        파일 변환
+      <h1 style={{ fontSize: "30px", fontWeight: "bold", color: "#333" }}>
+        🚧 준비중 🚧
       </h1>
-      <p style={{ fontSize: "16px", color: "#666", marginBottom: "20px" }}>
+      <p style={{ fontSize: "18px", color: "#666", marginBottom: "25px" }}>
         원하는 변환 형식을 선택하세요.
       </p>
+
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: "repeat(4, 1fr)",
+          gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))",
           gap: "15px",
           justifyContent: "center",
-          maxWidth: "600px",
+          maxWidth: "700px",
           margin: "auto",
         }}
       >
@@ -55,29 +74,34 @@ export default function ConvertHome() {
             key={format.type}
             onClick={() => handleConvertClick(format.type)}
             style={{
-              padding: "15px",
-              fontSize: "16px",
+              padding: "20px",
+              fontSize: "14px",
               cursor: "pointer",
               border: "none",
-              borderRadius: "8px",
+              borderRadius: "10px",
               background: "#ffffff",
               textAlign: "center",
-              boxShadow: "0px 2px 4px rgba(0, 0, 0, 0.1)",
+              boxShadow: "0px 2px 5px rgba(0, 0, 0, 0.1)",
               transition: "transform 0.2s ease",
               color: "#000",
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
             }}
-            onMouseOver={(e) => (e.target.style.transform = "scale(1.05)")}
+            onMouseOver={(e) => (e.target.style.transform = "scale(1.07)")}
             onMouseOut={(e) => (e.target.style.transform = "scale(1)")}
           >
             {format.image ? (
               <Image
                 src={format.image}
                 alt={format.name}
-                width={50}
-                height={50}
+                width={40}
+                height={40}
               />
             ) : (
-              <span>{format.name}</span>
+              <span style={{ fontSize: "16px", fontWeight: "bold" }}>
+                {format.name}
+              </span>
             )}
           </button>
         ))}
