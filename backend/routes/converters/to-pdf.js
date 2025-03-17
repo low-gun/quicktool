@@ -6,7 +6,10 @@ const { PDFDocument } = require("pdf-lib");
 const mammoth = require("mammoth");
 const textract = require("textract");
 const sharp = require("sharp");
-const pdfPoppler = require("pdf-poppler");
+// ❌ pdfPoppler 제거
+// const pdfPoppler = require("pdf-poppler");
+// ✅ pdf2pic 추가 (아래 사용처가 없더라도 일단 교체)
+const { fromPath } = require("pdf2pic");
 const showdown = require("showdown");
 const svg2img = require("svg2img");
 const pdfkit = require("pdfkit");
@@ -66,10 +69,8 @@ const convertToPdf = async (file) => {
       exec(command, (error, stdout, stderr) => {
         if (error) return reject(stderr);
 
-        // LibreOffice가 만든 .pdf 파일명을 찾아서 uuid_... 형태로 이름 변경 필요
-        // ex: file.path= /uploads/original/test.hwp => test.pdf
-        // 아래는 단순 예시 (이름 맞추고 싶다면 추가로 fs.renameSync 필요)
-        // 여기서는 그냥 LibreOffice가 생성한 PDF 파일명 그대로 사용 가능
+        // LibreOffice가 만든 .pdf 파일명을 찾아서 uuid_... 형태로 이름 변경 가능
+        // 필요하다면 fs.renameSync(...)로 'outputFileName' 맞춰주면 됩니다.
         resolve(outputFileName);
       });
     });
@@ -98,9 +99,8 @@ const convertToPdf = async (file) => {
     const page = pdfDoc.addPage([600, 800]);
     const imageBuffer = fs.readFileSync(file.path);
 
-    // PNG, JPEG 등 처리. gif/webp도 임시로 embedPng 시도 (실무에선 webp->png 변환할 수도)
+    // 기본 embedPng로 시도, 실패 시 Sharp로 PNG 변환 후 재시도
     const pdfImage = await pdfDoc.embedPng(imageBuffer).catch(async () => {
-      // fallback: Sharp로 PNG 변환 후 embed
       const pngBuffer = await sharp(imageBuffer).png().toBuffer();
       return pdfDoc.embedPng(pngBuffer);
     });
@@ -160,7 +160,7 @@ const convertToPdf = async (file) => {
   }
 
   // ──────────────────────────────────────────────────────
-  // TXT
+  // TXT → PDF
   if (file.mimetype === "text/plain") {
     const text = fs.readFileSync(file.path, "utf-8");
     const pdfDoc = await PDFDocument.create();
@@ -203,13 +203,12 @@ router.post("/", upload.single("file"), async (req, res) => {
 
   try {
     const outputFileName = await convertToPdf(req.file);
-    // 프론트에 표시할 최종 이름( uuid 제거된 파일명 )도 넘겨주고 싶다면:
-    //   getFinalFileName() 반환값 구조를 조금 바꾸거나
-    //   여기서 중간에 구해둔 finalNameWithoutUUID를 함께 반환하도록 조정
+    // 프론트에 표시할 최종 이름( uuid 제거된 파일명 )도 넘겨주고 싶으면
+    // getFinalFileName() 반환값에 접근하거나 여기에 저장해둔
+    // finalNameWithoutUUID를 추가로 반환하시면 됩니다.
     return res.json({
       message: "파일 → PDF 변환 성공!",
       downloadUrl: `/download/${outputFileName}`,
-      // fileName: finalNameWithoutUUID,
     });
   } catch (error) {
     console.error("❌ PDF 변환 중 오류 발생:", error);

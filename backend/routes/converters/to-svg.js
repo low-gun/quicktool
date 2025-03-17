@@ -3,7 +3,10 @@ const fs = require("fs");
 const path = require("path");
 const sharp = require("sharp");
 const potrace = require("potrace");
-const pdfPoppler = require("pdf-poppler");
+// ❌ pdfPoppler 제거
+// const pdfPoppler = require("pdf-poppler");
+// ✅ pdf2pic 사용
+const { fromPath } = require("pdf2pic");
 const mammoth = require("mammoth");
 const { upload } = require("../../middlewares/multerConfig");
 const { getFinalFileName } = require("../../utils/convertFileName"); // ⬅️ 공통 함수 임포트
@@ -79,33 +82,44 @@ router.post("/", upload.array("files"), async (req, res) => {
             potrace.trace(tempPngPath, (err, svg) => {
               if (err) return reject(err);
               fs.writeFileSync(outputFilePath, svg);
-              // 임시 PNG 삭제 가능
-              fs.unlinkSync(tempPngPath);
+              fs.unlinkSync(tempPngPath); // 임시 PNG 삭제
               resolve();
             });
           });
         }
 
-        // (2) PDF → SVG
+        // (2) PDF → SVG (pdf2pic 사용)
         else if (file.mimetype === "application/pdf") {
+          // PDF → PNG
           const pdfOptions = {
+            density: 100,
+            savePath: convertedPath,
             format: "png",
-            out_dir: convertedPath,
-            out_prefix: path.parse(file.filename).name,
+            saveFilename: path.parse(file.filename).name,
+            quality: 100,
           };
-          await pdfPoppler.convert(file.path, pdfOptions);
 
-          // pdf-poppler가 "filename-1.png" 등으로 생성
+          try {
+            const converter = fromPath(file.path, pdfOptions);
+            // 첫 페이지만 변환할 건지, 모든 페이지 변환할 건지 결정
+            // 여기서는 1페이지만 예시로 변환 (bulk(-1)은 전 페이지)
+            await converter.convert(1);
+          } catch (err) {
+            console.error("❌ PDF → PNG 변환 실패:", err);
+            throw err;
+          }
+
+          // pdf2pic이 생성한 "filename_1.png" 형태로 저장됨
           const tempPngPath = path.join(
             convertedPath,
-            `${path.parse(file.filename).name}-1.png`
+            `${path.parse(file.filename).name}_1.png`
           );
 
           await new Promise((resolve, reject) => {
             potrace.trace(tempPngPath, (err, svg) => {
               if (err) return reject(err);
               fs.writeFileSync(outputFilePath, svg);
-              // 필요하다면 tempPngPath도 삭제
+              // 필요하다면 tempPngPath 삭제
               resolve();
             });
           });
@@ -117,7 +131,7 @@ router.post("/", upload.array("files"), async (req, res) => {
           "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
         ) {
           const result = await mammoth.extractRawText({ path: file.path });
-          // 텍스트 -> PNG 변환
+          // 텍스트 -> PNG 변환 (단순 예시: 텍스트를 이미지로 간주)
           const textBuffer = Buffer.from(result.value, "utf-8");
           const tempPngPath = `${file.path}.png`;
 
@@ -127,7 +141,6 @@ router.post("/", upload.array("files"), async (req, res) => {
             potrace.trace(tempPngPath, (err, svg) => {
               if (err) return reject(err);
               fs.writeFileSync(outputFilePath, svg);
-              // tempPngPath 삭제
               fs.unlinkSync(tempPngPath);
               resolve();
             });

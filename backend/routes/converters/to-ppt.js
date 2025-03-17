@@ -1,7 +1,10 @@
 const express = require("express");
 const fs = require("fs");
 const path = require("path");
-const pdfPoppler = require("pdf-poppler");
+// ❌ pdfPoppler 제거
+// const pdfPoppler = require("pdf-poppler");
+// ✅ pdf2pic 사용
+const { fromPath } = require("pdf2pic");
 const pdfParse = require("pdf-parse");
 const pptxgen = require("pptxgenjs");
 const { upload } = require("../../middlewares/multerConfig");
@@ -72,15 +75,19 @@ router.post("/", upload.single("file"), async (req, res) => {
         fs.mkdirSync(pdfImageDir, { recursive: true });
       }
 
+      // pdf2pic 옵션
       const pdfOptions = {
-        format: "jpeg",
-        out_dir: pdfImageDir,
-        out_prefix: finalNameWithoutUUID,
-        page: null,
+        density: 100,
+        savePath: pdfImageDir,
+        format: "jpg",
+        saveFilename: finalNameWithoutUUID,
+        quality: 100,
       };
 
       try {
-        await pdfPoppler.convert(req.file.path, pdfOptions);
+        const converter = fromPath(req.file.path, pdfOptions);
+        // 모든 페이지 변환
+        await converter.bulk(-1);
       } catch (error) {
         console.error("❌ PDF 페이지 변환 실패:", error);
         return res.status(500).json({

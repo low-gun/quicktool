@@ -4,9 +4,10 @@ const path = require("path");
 const ExcelJS = require("exceljs");
 const pdfParse = require("pdf-parse");
 const Tesseract = require("tesseract.js");
-const pdfPoppler = require("pdf-poppler");
+// pdf2pic 사용
+const { fromPath } = require("pdf2pic");
 const { upload } = require("../../middlewares/multerConfig");
-const { getFinalFileName } = require("../../utils/convertFileName"); // ⬅️ 공통 함수 임포트
+const { getFinalFileName } = require("../../utils/convertFileName");
 
 const router = express.Router();
 
@@ -50,8 +51,7 @@ router.post("/", upload.single("file"), async (req, res) => {
 
     const outputFilePath = path.join(convertedPath, outputFileName);
 
-    // pdfPoppler로 PDF 페이지 이미지를 추출할 때 쓰는 디렉토리 이름 필요
-    // => "파일이름" 부분만 쓰면 됨 (.xlsx 제거)
+    // PDF → 이미지 변환 시 생성할 디렉토리 이름
     const sanitizedBase = path.basename(finalNameWithoutUUID, ".xlsx");
     const pdfImageDir = path.join(convertedPath, `${sanitizedBase}_pages/`);
 
@@ -98,16 +98,18 @@ router.post("/", upload.single("file"), async (req, res) => {
           fs.mkdirSync(pdfImageDir, { recursive: true });
         }
 
+        // PDF → JPG(s)
         const pdfOptions = {
-          format: "jpeg",
-          out_dir: pdfImageDir,
-          out_prefix: sanitizedBase, // 예: "내문서_pages/내문서"
-          page: null, // 모든 페이지 변환
+          density: 100,
+          savePath: pdfImageDir,
+          format: "jpg", // JPG로 변환
+          saveFilename: sanitizedBase,
+          quality: 100,
         };
 
         try {
-          // PDF → JPG(s)
-          await pdfPoppler.convert(req.file.path, pdfOptions);
+          const converter = fromPath(req.file.path, pdfOptions);
+          await converter.bulk(-1); // 모든 페이지 변환
         } catch (error) {
           console.error("❌ PDF 페이지 변환 실패:", error);
           return res.status(500).json({

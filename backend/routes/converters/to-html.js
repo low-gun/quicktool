@@ -3,7 +3,8 @@ const fs = require("fs");
 const path = require("path");
 const pdfParse = require("pdf-parse");
 const Tesseract = require("tesseract.js");
-const pdfPoppler = require("pdf-poppler");
+// pdf2pic 사용
+const { fromPath } = require("pdf2pic");
 const { upload } = require("../../middlewares/multerConfig");
 const { getFinalFileName } = require("../../utils/convertFileName"); // ⬅️ 공통 함수 임포트
 
@@ -80,15 +81,27 @@ router.post("/", upload.array("files"), async (req, res) => {
             fs.mkdirSync(pdfImageDir, { recursive: true });
           }
 
-          const pdfOptions = {
-            format: "jpeg",
-            out_dir: pdfImageDir,
-            out_prefix: path.parse(file.filename).name,
-            page: null, // 모든 페이지 변환
+          // PDF → JPG(s)
+          const options = {
+            density: 100,
+            savePath: pdfImageDir,
+            format: "jpg",
+            saveFilename: path.parse(file.filename).name,
+            quality: 100,
           };
 
-          await pdfPoppler.convert(file.path, pdfOptions);
+          try {
+            const converter = fromPath(file.path, options);
+            await converter.bulk(-1); // 모든 페이지 변환
+          } catch (error) {
+            console.error("❌ PDF 페이지 변환 실패:", error);
+            return res.status(500).json({
+              message: "PDF → 이미지 변환 중 오류 발생",
+              error: error.message,
+            });
+          }
 
+          // 추출된 이미지들에 대해 OCR 수행
           const imageFiles = fs
             .readdirSync(pdfImageDir)
             .filter((f) => f.endsWith(".jpg"));
@@ -97,12 +110,20 @@ router.post("/", upload.array("files"), async (req, res) => {
           }
 
           for (const imageFile of imageFiles) {
-            const imagePath = path.join(pdfImageDir, imageFile);
-            // OCR 인식 (여기선 'kor' - 한글)
-            const {
-              data: { text },
-            } = await Tesseract.recognize(imagePath, "kor");
-            htmlContent += `<p>${text.trim()}</p>`;
+            try {
+              const imagePath = path.join(pdfImageDir, imageFile);
+              // 여기선 'kor' (한글)로 OCR
+              const {
+                data: { text },
+              } = await Tesseract.recognize(imagePath, "kor");
+              htmlContent += `<p>${text.trim()}</p>`;
+            } catch (error) {
+              console.error("❌ OCR 변환 중 오류 발생:", error);
+              return res.status(500).json({
+                message: "OCR 변환 중 오류 발생",
+                error: error.message,
+              });
+            }
           }
         }
       }

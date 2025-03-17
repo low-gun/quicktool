@@ -4,7 +4,7 @@ const path = require("path");
 const sharp = require("sharp");
 const heicConvert = require("heic-convert");
 const PSD = require("psd");
-const pdfPoppler = require("pdf-poppler");
+const { fromPath } = require("pdf2pic"); // ✨ 라이브러리 교체
 const mammoth = require("mammoth");
 const svg2img = require("svg2img");
 const { upload } = require("../../middlewares/multerConfig");
@@ -38,6 +38,7 @@ router.post("/", upload.array("files"), async (req, res) => {
     const fileNames = []; // 프론트에 내려줄 파일명
     const convertedPath = path.join(__dirname, "../../uploads/converted");
 
+    // 업로드된 파일마다 처리
     for (const file of req.files) {
       console.log("✅ 원본 파일명:", file.originalname);
 
@@ -87,18 +88,22 @@ router.post("/", upload.array("files"), async (req, res) => {
           const pngBuffer = await psd.image.toPng();
           await sharp(pngBuffer).toFormat("jpeg").toFile(outputFilePath);
         }
-        // PDF → JPEG (pdfPoppler)
+        // PDF → JPEG (pdf2pic 사용)
         else if (file.mimetype === "application/pdf") {
-          const options = {
-            format: "jpeg",
-            out_dir: convertedPath,
-            out_prefix: path.parse(file.filename).name,
+          // 여러 페이지가 있으면 여러 JPEG가 생성됩니다.
+          const pdfOptions = {
+            density: 100,
+            savePath: convertedPath,
+            format: "jpg", // pdf2pic은 "jpg"로 지정
+            saveFilename: path.parse(file.filename).name,
+            quality: 100,
           };
-          await pdfPoppler.convert(file.path, options);
-          // ⚠️ pdfPoppler는 여러 페이지가 여러 파일로 생성됨
-          // front에서 파일명 표시나 다운로드를 위해선 추가 로직으로
-          // 생성된 JPEG 파일들을 한데 묶어야 할 수 있음
-          // 여기서는 단순히 pdfPoppler만 실행
+
+          const converter = fromPath(file.path, pdfOptions);
+          await converter.bulk(-1);
+          // 여러 페이지면 여러 개의 jpg 파일이 생성됨.
+          // 이 예시는 단순히 변환만 수행.
+          // 한 파일만 반환하는 기존 구조와 다를 수 있음.
         }
         // DOCX → JPEG (mammoth -> text -> Buffer -> sharp)
         else if (
@@ -123,7 +128,7 @@ router.post("/", upload.array("files"), async (req, res) => {
                 .toFormat("jpeg")
                 .toFile(outputFilePath)
                 .then(() => {
-                  fs.unlinkSync(tempPngPath); // 임시 png 파일 삭제 (선택)
+                  fs.unlinkSync(tempPngPath); // 임시 png 파일 삭제
                   resolve();
                 })
                 .catch(reject);

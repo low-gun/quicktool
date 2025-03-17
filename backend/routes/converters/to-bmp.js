@@ -4,7 +4,6 @@ const path = require("path");
 const sharp = require("sharp");
 const { upload } = require("../../middlewares/multerConfig");
 const { getFinalFileName } = require("../../utils/convertFileName"); // ⬅️ 공통 함수 임포트
-const { getFinalFileName } = require("../utils/convertFileName");
 
 const router = express.Router();
 

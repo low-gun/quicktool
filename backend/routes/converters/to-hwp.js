@@ -4,7 +4,8 @@ const path = require("path");
 const HWP = require("hwp.js");
 const pdfParse = require("pdf-parse");
 const Tesseract = require("tesseract.js");
-const pdfPoppler = require("pdf-poppler");
+// pdf2pic 사용
+const { fromPath } = require("pdf2pic");
 const { upload } = require("../../middlewares/multerConfig");
 const { getFinalFileName } = require("../../utils/convertFileName"); // ⬅️ 공통 함수 임포트
 
@@ -91,15 +92,20 @@ router.post("/", upload.array("files"), async (req, res) => {
             fs.mkdirSync(pdfImageDir, { recursive: true });
           }
 
+          // pdf2pic 옵션
           const pdfOptions = {
-            format: "jpeg",
-            out_dir: pdfImageDir,
-            out_prefix: path.parse(file.filename).name,
-            page: null, // 모든 페이지 변환
+            density: 100,
+            savePath: pdfImageDir,
+            format: "jpg",
+            saveFilename: path.parse(file.filename).name,
+            quality: 100,
           };
 
-          await pdfPoppler.convert(file.path, pdfOptions);
+          // PDF 모든 페이지 → JPG
+          const converter = fromPath(file.path, pdfOptions);
+          await converter.bulk(-1); // -1: 모든 페이지 변환
 
+          // 변환된 이미지 목록
           const imageFiles = fs
             .readdirSync(pdfImageDir)
             .filter((f) => f.endsWith(".jpg"));
@@ -109,9 +115,10 @@ router.post("/", upload.array("files"), async (req, res) => {
 
           for (const imageFile of imageFiles) {
             const imagePath = path.join(pdfImageDir, imageFile);
+            // 한글 OCR
             const {
               data: { text },
-            } = await Tesseract.recognize(imagePath, "kor"); // 한글 OCR
+            } = await Tesseract.recognize(imagePath, "kor");
             hwpDoc.addParagraph(text.trim());
           }
         }

@@ -41,7 +41,7 @@
     "path": "^0.12.7",
     "pdf-lib": "^1.17.1",
     "pdf-parse": "^1.1.1",
-    "pdf-poppler": "^0.2.1",
+    "pdf2pic": "^3.1.4",
     "pdfkit": "^0.16.0",
     "potrace": "^2.1.8",
     "pptxgenjs": "^3.12.0",

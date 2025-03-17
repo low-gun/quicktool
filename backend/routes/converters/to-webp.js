@@ -2,7 +2,10 @@ const express = require("express");
 const fs = require("fs");
 const path = require("path");
 const sharp = require("sharp");
-const pdfPoppler = require("pdf-poppler");
+// ❌ pdfPoppler 제거
+// const pdfPoppler = require("pdf-poppler");
+// ✅ pdf2pic 사용
+const { fromPath } = require("pdf2pic");
 const mammoth = require("mammoth");
 const { upload } = require("../../middlewares/multerConfig");
 const { getFinalFileName } = require("../../utils/convertFileName"); // ⬅️ 공통 함수 임포트
@@ -30,7 +33,7 @@ router.post("/", upload.array("files"), async (req, res) => {
 
   try {
     const convertedFiles = [];
-    const fileNames = []; // 프론트로 내려줄 파일명
+    const fileNames = []; // 프론트에 내려줄 파일명
     const convertedPath = path.join(__dirname, "../../uploads/converted/");
 
     if (!fs.existsSync(convertedPath)) {
@@ -55,7 +58,7 @@ router.post("/", upload.array("files"), async (req, res) => {
 
       const outputFilePath = path.join(convertedPath, outputFileName);
 
-      // 2) 변환 로직 (Sharp / pdf-poppler / mammoth 등)
+      // 2) 변환 로직
       try {
         // 래스터 이미지 계열 (JPEG, PNG, GIF, BMP, TIFF, WEBP, AVIF)
         if (
@@ -71,26 +74,34 @@ router.post("/", upload.array("files"), async (req, res) => {
         ) {
           await sharp(file.path).toFormat("webp").toFile(outputFilePath);
         }
-        // PDF → WEBP
+        // PDF → WEBP (pdf2pic 사용)
         else if (file.mimetype === "application/pdf") {
-          const options = {
+          // 먼저 PDF를 PNG로 변환
+          const pdfOptions = {
+            density: 100,
+            savePath: convertedPath,
             format: "png",
-            out_dir: convertedPath,
-            out_prefix: path.parse(file.filename).name,
+            saveFilename: path.parse(file.filename).name,
+            quality: 100,
           };
-          await pdfPoppler.convert(file.path, options);
 
-          // pdf-poppler가 "filename-1.png" 생성
+          // 필요한 만큼 페이지를 변환 (여기선 첫 페이지만 예시)
+          const converter = fromPath(file.path, pdfOptions);
+          await converter.convert(1);
+
+          // pdf2pic은 "filename_1.png" 같은 이름으로 생성
           const tempPngPath = path.join(
             convertedPath,
-            `${path.parse(file.filename).name}-1.png`
+            `${path.parse(file.filename).name}_1.png`
           );
+
+          // PNG → WEBP
           await sharp(tempPngPath).toFormat("webp").toFile(outputFilePath);
 
-          // 필요하면 tempPngPath 삭제
+          // 필요하면 임시 PNG 삭제
           // fs.unlinkSync(tempPngPath);
         }
-        // DOCX → WEBP (텍스트를 PNG -> WEBP)
+        // DOCX → WEBP (텍스트를 임시 PNG → WEBP)
         else if (
           file.mimetype ===
           "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
@@ -99,9 +110,9 @@ router.post("/", upload.array("files"), async (req, res) => {
           const textBuffer = Buffer.from(result.value, "utf-8");
           const tempPngPath = `${file.path}.png`;
 
-          // 텍스트를 임시 PNG로
+          // 텍스트 → PNG
           await sharp(textBuffer).png().toFile(tempPngPath);
-          // 임시 PNG -> WEBP
+          // PNG → WEBP
           await sharp(tempPngPath).toFormat("webp").toFile(outputFilePath);
 
           // 필요하면 임시 PNG 삭제

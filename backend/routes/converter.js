@@ -4,7 +4,9 @@ const sharp = require("sharp");
 const { v4: uuidv4 } = require("uuid"); // ✅ UUID 추가
 const heicConvert = require("heic-convert");
 const PSD = require("psd");
-const pdfPoppler = require("pdf-poppler");
+// ❌ pdfPoppler 제거하고 pdf2pic 추가
+// const pdfPoppler = require("pdf-poppler");
+const { fromPath } = require("pdf2pic");
 const mammoth = require("mammoth");
 const ffmpeg = require("fluent-ffmpeg"); // ✅ 오디오 & 비디오 변환 추가
 
@@ -41,14 +43,28 @@ const convertFile = async (file, format) => {
     const pngBuffer = await psd.image.toPng();
     await sharp(pngBuffer).toFormat(format).toFile(outputFilePath);
   }
-  // ✅ PDF 변환 처리
+  // ✅ PDF 변환 처리 (pdf2pic 사용)
   else if (file.mimetype === "application/pdf") {
+    // pdf2pic 옵션
     const options = {
-      format: format,
-      out_dir: convertedPath,
-      out_prefix: path.parse(file.filename).name,
+      density: 100, // 해상도
+      savePath: convertedPath, // 변환된 이미지 저장 폴더
+      format: format, // jpg, png, tiff 등
+      saveFilename: `${uuidv4()}_${sanitizedFileName}`,
+      quality: 100,
     };
-    await pdfPoppler.convert(file.path, options);
+
+    // PDF 전체 페이지 → 이미지 배열
+    const converter = fromPath(file.path, options);
+    const result = await converter.bulk(-1); // -1: 모든 페이지 변환
+
+    // 여러 페이지가 변환되므로, 아래처럼 배열로 반환
+    // result: [{ page:1, path:'...'}, { page:2, path:'...'}, ... ]
+    const outputFiles = result.map((r) => r.path);
+    return {
+      outputFilePath: outputFiles, // 이미지 경로들
+      outputFileName: outputFiles.map((p) => path.basename(p)), // 이미지 파일명들
+    };
   }
   // ✅ DOCX 변환 처리
   else if (
@@ -84,6 +100,7 @@ const convertFile = async (file, format) => {
     throw new Error(`지원되지 않는 변환 형식: ${format}`);
   }
 
+  // PDF가 아닌 경우(단일 파일 변환)엔 기존 방식 그대로 반환
   return { outputFilePath, outputFileName };
 };
 
