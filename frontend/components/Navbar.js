@@ -75,7 +75,7 @@ export default function Navbar() {
               borderRadius: "5px",
               border: "none",
               cursor: "pointer",
-              color: "#007bff",
+              color: "#fff",
             }}
           >
             로그아웃
