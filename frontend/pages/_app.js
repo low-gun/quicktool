@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
 import Navbar from "../components/Navbar";
+import Footer from "../components/Footer";
 import "../styles/globals.css";
 
 export default function MyApp({ Component, pageProps }) {
@@ -20,6 +21,7 @@ export default function MyApp({ Component, pageProps }) {
     <>
       <Navbar />
       <Component {...pageProps} isLoggedIn={isLoggedIn} />
+      <Footer />
     </>
   );
 }
