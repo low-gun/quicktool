@@ -1,4 +1,7 @@
+// utils/allowedFormats.js
+
 const allowedFormats = {
+  // 기존 변환 키들
   "to-avi": ["video/mp4", "video/webm", "video/mov", "video/mkv", "image/gif"],
   "to-bmp": [
     "image/jpeg",
@@ -165,6 +168,15 @@ const allowedFormats = {
   ],
   "to-xml": ["application/json", "text/csv", "application/x-yaml"],
   "to-zip": "*", // 모든 파일 허용
+
+  // (추가) PDF 관련 기능들
+  "pdf-rotate": ["application/pdf"],
+  "pdf-merge-split": ["application/pdf"],
+  "pdf-watermark": ["application/pdf"],
+  "pdf-encrypt": ["application/pdf"],
+
+  // (추가) OCR용: 기본적으로 이미지 형식 허용
+  ocr: ["image/jpeg", "image/png", "image/bmp", "image/tiff"],
 };
 
 export default allowedFormats;

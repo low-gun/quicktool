@@ -1,4 +1,7 @@
+// backend/routes/api.js
 const express = require("express");
+const router = express.Router();
+// ────────── 기존 변환 모듈 (to-xxx) ──────────
 const toJpeg = require("./converters/to-jpeg");
 const toPng = require("./converters/to-png");
 const toGif = require("./converters/to-gif");
@@ -25,13 +28,33 @@ const toXml = require("./converters/to-xml");
 const toHtml = require("./converters/to-html");
 const toHwp = require("./converters/to-hwp");
 
-const router = express.Router();
+// ────────── (새로 추가) 이미지 편집용 모듈 (image-xxx) ──────────
+const imageOptimize = require("./image/imageOptimize");
+const imageCrop = require("./image/imageCrop");
+const imageRotate = require("./image/imageRotate");
+const imageWatermark = require("./image/imageWatermark");
 
+// ────────── (추가) OCR 라우트 ──────────
+const ocrRouter = require("./ocr/ocrExtract");
+
+// ────────── PDF 라우트 ──────────
+const pdfRouter = require("./pdf");
+
+// ────────── (신규) 비디오 관련 라우트 (video/index.js) ──────────
+const videoRouter = require("./video");
+
+// ────────── (신규) 클라우드 업로드 라우트 (cloudUpload/index.js) ──────────
+const cloudRouter = require("./cloudUpload");
+const notesRouter = require("./notes");
+// 상태 체크용 (GET /api/status)
 router.get("/status", (req, res) => {
   console.log(`✅ Express가 받은 요청 URL: ${req.originalUrl}`);
   res.json({ status: "OK", message: "API is running" });
 });
 
+// ─────────────────────────────────────────────────────────
+// 기존 "to-xxx" 라우트 (문서/파일 변환)
+// ─────────────────────────────────────────────────────────
 router.use("/to-jpeg", toJpeg);
 router.use("/to-png", toPng);
 router.use("/to-gif", toGif);
@@ -58,10 +81,40 @@ router.use("/to-xml", toXml);
 router.use("/to-html", toHtml);
 router.use("/to-hwp", toHwp);
 
+// ─────────────────────────────────────────────────────────
+// 새로 추가: 이미지 편집 라우트 ("image-xxx")
+// ─────────────────────────────────────────────────────────
+router.use("/image-optimize", imageOptimize);
+router.use("/image-crop", imageCrop);
+router.use("/image-rotate", imageRotate);
+router.use("/image-watermark", imageWatermark);
+
+// ─────────────────────────────────────────────────────────
+// (추가) OCR 라우트
+// ─────────────────────────────────────────────────────────
+router.use("/ocr", ocrRouter);
+
+// ─────────────────────────────────────────────────────────
+// (추가) PDF 라우트
+// ─────────────────────────────────────────────────────────
+router.use("/pdf", pdfRouter);
+
+// ─────────────────────────────────────────────────────────
+// (신규) 비디오 라우트 (/video/...)
+// ─────────────────────────────────────────────────────────
+router.use("/video", videoRouter);
+
+// ─────────────────────────────────────────────────────────
+// (신규) 클라우드 라우트 (/cloud/...)
+// ─────────────────────────────────────────────────────────
+router.use("/cloud", cloudRouter);
+router.use("/notes", notesRouter);
+// 홈 라우트: 사용 가능한 변환 목록 안내 (GET /api)
 router.get("/", (req, res) => {
   res.json({
     message: "Backend API is Running!",
     availableRoutes: [
+      // 기존 to-xxx
       "/to-jpeg",
       "/to-png",
       "/to-gif",
@@ -87,6 +140,26 @@ router.get("/", (req, res) => {
       "/to-xml",
       "/to-html",
       "/to-hwp",
+      // 새로 추가 (image-xxx)
+      "/image-optimize",
+      "/image-crop",
+      "/image-rotate",
+      "/image-watermark",
+      // OCR
+      "/ocr",
+      // PDF
+      "/pdf/rotate",
+      "/pdf/merge-split",
+      "/pdf/watermark",
+      "/pdf/encrypt",
+      // (신규) 비디오
+      "/video/resolution",
+      "/video/subtitle",
+      "/video/trim",
+      // (신규) 클라우드
+      "/cloud/dropbox",
+      "/cloud/google-drive",
+      "/cloud/one-drive",
     ],
   });
 });

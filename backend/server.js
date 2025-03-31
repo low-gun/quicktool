@@ -21,7 +21,6 @@ if (!fs.existsSync(convertedFolder)) {
 
 // ✅ CORS 설정
 const allowedOrigins = ["http://localhost:3000", "https://www.quicktool.co.kr"];
-
 app.use(
   cors({
     origin: function (origin, callback) {

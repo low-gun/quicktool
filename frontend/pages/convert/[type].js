@@ -1,265 +1,250 @@
 import { useRouter } from "next/router";
-import { useState, useEffect, useCallback, useRef } from "react"; // 변경: useEffect 추가
-import { useDropzone } from "react-dropzone";
+import { useState, useRef } from "react";
 import Layout from "../../components/layout";
-import { formatAllowedExtensions } from "../../utils/formatHelper";
+import DropzoneSection from "../../components/DropzoneSection";
+import ProgressBar from "../../components/ProgressBar";
 import allowedFormats from "../../utils/allowedFormats";
-import ConvertOptions from "../../components/ConvertOptions"; // ✅ 추가
+import Toast from "../../components/Toast"; // Toast 컴포넌트 임포트
+
+// 긴 MIME을 간단한 이름으로 매핑
+const friendlyMimeNames = {
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
+    "DOCX",
+  "text/plain": "TXT",
+  "application/x-hwp": "HWP",
+  "image/png": "PNG",
+  "image/jpeg": "JPEG",
+  "image/gif": "GIF",
+  "image/bmp": "BMP",
+  "image/tiff": "TIFF",
+  "image/webp": "WEBP",
+  "image/svg+xml": "SVG",
+  "application/vnd.ms-excel": "XLS",
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": "XLSX",
+  "application/vnd.ms-powerpoint": "PPT",
+  "application/vnd.openxmlformats-officedocument.presentationml.presentation":
+    "PPTX",
+  "text/markdown": "MARKDOWN",
+  "text/html": "HTML",
+  "text/csv": "CSV",
+  "application/rtf": "RTF",
+  "application/epub+zip": "EPUB",
+  "application/pdf": "PDF",
+  "image/vnd.adobe.photoshop": "PSD",
+};
+
+function formatAllowedExtensions(mimes) {
+  return mimes
+    .map((mime) => {
+      if (friendlyMimeNames[mime]) {
+        return friendlyMimeNames[mime];
+      }
+      const ext = mime.split("/").pop();
+      return ext ? ext.toUpperCase() : mime;
+    })
+    .join(", ");
+}
 
 export default function ConvertPage() {
   const router = useRouter();
   const { type } = router.query;
 
-  const [selectedFiles, setSelectedFiles] = useState([]);
-  // 기존 downloadUrls 대체
-  const [downloadData, setDownloadData] = useState([]);
-  const [progress, setProgress] = useState(0);
+  // Toast 메시지 상태
+  const [toastMsg, setToastMsg] = useState("");
 
-  // 진행률 시뮬레이션 interval 보관용
+  // 업로드된 파일
+  const [selectedFiles, setSelectedFiles] = useState([]);
+  const [downloadData, setDownloadData] = useState([]);
+
+  // 진행률
+  const [progress, setProgress] = useState(0);
   const progressIntervalRef = useRef(null);
   const [isConverting, setIsConverting] = useState(false);
-  const [conversionType, setConversionType] = useState("image");
-  const [isConversionRequired, setIsConversionRequired] = useState(false);
 
-  // ─────────────────────────────────────────────────────
-  // 드롭존 설정
-  // ─────────────────────────────────────────────────────
-  const onDrop = useCallback(
-    (acceptedFiles) => {
-      if (!type || !allowedFormats[type]) {
-        alert("변환 유형이 올바르지 않습니다.");
-        return;
-      }
+  // PDF 옵션 상태
+  const [angle, setAngle] = useState(90);
+  const [mode, setMode] = useState("merge");
+  const [watermarkText, setWatermarkText] = useState("WATERMARK");
+  const [pdfPassword, setPdfPassword] = useState("1234");
 
-      const validFiles = [];
-      const invalidFiles = [];
-
-      acceptedFiles.forEach((file) => {
-        if (
-          allowedFormats[type] === "*" ||
-          allowedFormats[type].includes(file.type)
-        ) {
-          validFiles.push(file);
-        } else {
-          invalidFiles.push(file.name);
-        }
-      });
-
-      if (invalidFiles.length > 0) {
-        alert(
-          `아래 파일은 허용되지 않는 파일 형식입니다:\n${invalidFiles.join(
-            "\n"
-          )}`
-        );
-        return;
-      }
-
-      setSelectedFiles((prevFiles) => [...prevFiles, ...validFiles]);
-    },
-    [type]
-  );
-
-  const { getRootProps, getInputProps } = useDropzone({
-    onDrop,
-    multiple: true,
-    noClick: false,
-    disabled: false,
-  });
-
-  const inputProps = getInputProps();
-
-  // ─────────────────────────────────────────────────────
-  // 파일 삭제
-  // ─────────────────────────────────────────────────────
-  const handleRemoveFile = (index) => {
-    setSelectedFiles((prevFiles) => prevFiles.filter((_, i) => i !== index));
-  };
-
-  // ─────────────────────────────────────────────────────
-  // 변환에 필요한 UI 로직
-  // ─────────────────────────────────────────────────────
-  useEffect(() => {
-    console.time("Type 설정 시간"); // ⏱️ 로딩 시간 측정 시작
-
-    if (
-      selectedFiles.length === 1 &&
-      ["to-ppt", "to-excel"].includes(type) &&
-      (selectedFiles[0]?.name.toLowerCase().endsWith(".pdf") ||
-        selectedFiles[0]?.name.toLowerCase().endsWith(".docx"))
-    ) {
-      setIsConversionRequired(true);
-    } else {
-      setIsConversionRequired(false);
-    }
-
-    if (type) {
-      console.timeEnd("Type 설정 시간"); // ⏱️ 로딩 시간 측정 종료
-    }
-  }, [selectedFiles, type]);
-
-  useEffect(() => {
-    if (
-      selectedFiles.length === 1 &&
-      ["to-ppt", "to-excel"].includes(type) &&
-      (selectedFiles[0]?.name.toLowerCase().endsWith(".pdf") ||
-        selectedFiles[0]?.name.toLowerCase().endsWith(".docx"))
-    ) {
-      setIsConversionRequired(true);
-    } else {
-      setIsConversionRequired(false);
-    }
-  }, [selectedFiles, type]);
-
-  // ─────────────────────────────────────────────────────
   // 진행률 시뮬레이션
-  // ─────────────────────────────────────────────────────
-  const startProgressSimulation = () => {
+  const startProgress = () => {
     if (progressIntervalRef.current) {
       clearInterval(progressIntervalRef.current);
-      progressIntervalRef.current = null;
     }
     setProgress(0);
     progressIntervalRef.current = setInterval(() => {
-      setProgress((prev) => {
-        if (prev < 90) {
-          return prev + 5;
-        } else {
-          return prev;
-        }
-      });
+      setProgress((prev) => (prev < 90 ? prev + 5 : prev));
     }, 300);
   };
 
-  const stopProgressSimulation = () => {
+  const stopProgress = () => {
     if (progressIntervalRef.current) {
       clearInterval(progressIntervalRef.current);
       progressIntervalRef.current = null;
     }
   };
 
-  // ─────────────────────────────────────────────────────
+  // Toast 닫기
+  const handleCloseToast = () => {
+    setToastMsg("");
+  };
+
   // 변환 요청
-  // ─────────────────────────────────────────────────────
   const handleConvert = async () => {
-    if (selectedFiles.length === 0) {
-      alert("파일을 선택해주세요.");
+    if (!type || selectedFiles.length === 0) {
+      setToastMsg("타입 또는 파일을 확인하세요.");
       return;
     }
 
     setIsConverting(true);
-    startProgressSimulation();
+    startProgress();
 
-    const formData = new FormData();
-
-    // 변환 방식 선택이 필요한 경우만 추가
-    if (selectedFiles.length === 1 && ["to-ppt", "to-excel"].includes(type)) {
-      const fileExtension = selectedFiles[0].name
-        .split(".")
-        .pop()
-        .toLowerCase();
-      if (["pdf", "docx"].includes(fileExtension)) {
-        formData.append("conversionType", conversionType);
-      }
+    let endpoint = "";
+    if (type === "pdf-rotate") {
+      endpoint = `${process.env.NEXT_PUBLIC_API_URL}/api/pdf/rotate`;
+    } else if (type === "pdf-merge-split") {
+      endpoint = `${process.env.NEXT_PUBLIC_API_URL}/api/pdf/merge-split`;
+    } else if (type === "pdf-watermark") {
+      endpoint = `${process.env.NEXT_PUBLIC_API_URL}/api/pdf/watermark`;
+    } else if (type === "pdf-encrypt") {
+      endpoint = `${process.env.NEXT_PUBLIC_API_URL}/api/pdf/encrypt`;
+    } else if (type === "ocr") {
+      endpoint = `${process.env.NEXT_PUBLIC_API_URL}/api/ocr/extract`;
+    } else if (type === "to-avi") {
+      endpoint = `${process.env.NEXT_PUBLIC_API_URL}/api/to-avi`;
+    } else if (type === "to-bmp") {
+      endpoint = `${process.env.NEXT_PUBLIC_API_URL}/api/to-bmp`;
+    } else if (type === "to-csv") {
+      endpoint = `${process.env.NEXT_PUBLIC_API_URL}/api/to-csv`;
+    } else if (type === "to-docx") {
+      endpoint = `${process.env.NEXT_PUBLIC_API_URL}/api/to-docx`;
+    } else if (type === "to-excel") {
+      endpoint = `${process.env.NEXT_PUBLIC_API_URL}/api/to-excel`;
+    } else if (type === "to-gif") {
+      endpoint = `${process.env.NEXT_PUBLIC_API_URL}/api/to-gif`;
+    } else if (type === "to-heic") {
+      endpoint = `${process.env.NEXT_PUBLIC_API_URL}/api/to-heic`;
+    } else if (type === "to-html") {
+      endpoint = `${process.env.NEXT_PUBLIC_API_URL}/api/to-html`;
+    } else if (type === "to-hwp") {
+      endpoint = `${process.env.NEXT_PUBLIC_API_URL}/api/to-hwp`;
+    } else if (type === "to-jpeg") {
+      endpoint = `${process.env.NEXT_PUBLIC_API_URL}/api/to-jpeg`;
+    } else if (type === "to-json") {
+      endpoint = `${process.env.NEXT_PUBLIC_API_URL}/api/to-json`;
+    } else if (type === "to-mkv") {
+      endpoint = `${process.env.NEXT_PUBLIC_API_URL}/api/to-mkv`;
+    } else if (type === "to-mov") {
+      endpoint = `${process.env.NEXT_PUBLIC_API_URL}/api/to-mov`;
+    } else if (type === "to-mp3") {
+      endpoint = `${process.env.NEXT_PUBLIC_API_URL}/api/to-mp3`;
+    } else if (type === "to-mp4") {
+      endpoint = `${process.env.NEXT_PUBLIC_API_URL}/api/to-mp4`;
+    } else if (type === "to-pdf") {
+      endpoint = `${process.env.NEXT_PUBLIC_API_URL}/api/to-pdf`;
+    } else if (type === "to-png") {
+      endpoint = `${process.env.NEXT_PUBLIC_API_URL}/api/to-png`;
+    } else if (type === "to-ppt") {
+      endpoint = `${process.env.NEXT_PUBLIC_API_URL}/api/to-ppt`;
+    } else if (type === "to-svg") {
+      endpoint = `${process.env.NEXT_PUBLIC_API_URL}/api/to-svg`;
+    } else if (type === "to-tiff") {
+      endpoint = `${process.env.NEXT_PUBLIC_API_URL}/api/to-tiff`;
+    } else if (type === "to-txt") {
+      endpoint = `${process.env.NEXT_PUBLIC_API_URL}/api/to-txt`;
+    } else if (type === "to-wav") {
+      endpoint = `${process.env.NEXT_PUBLIC_API_URL}/api/to-wav`;
+    } else if (type === "to-webp") {
+      endpoint = `${process.env.NEXT_PUBLIC_API_URL}/api/to-webp`;
+    } else if (type === "to-xml") {
+      endpoint = `${process.env.NEXT_PUBLIC_API_URL}/api/to-xml`;
+    } else if (type === "to-zip") {
+      endpoint = `${process.env.NEXT_PUBLIC_API_URL}/api/to-zip`;
+    } else {
+      setToastMsg(`지원하지 않는 type: ${type}`);
+      stopProgress();
+      setIsConverting(false);
+      return;
     }
 
-    // 단일 파일 / 다중 파일 처리
-    if (
-      selectedFiles.length === 1 &&
-      ["to-ppt", "to-docx", "to-pdf"].includes(type)
-    ) {
-      formData.append("file", selectedFiles[0]);
-    } else {
-      selectedFiles.forEach((file) => {
-        formData.append("files", file, file.name);
-      });
+    // 폼데이터 구성
+    const formData = new FormData();
+    selectedFiles.forEach((file) => formData.append("files", file));
+
+    // 기능별 옵션
+    if (type === "pdf-rotate") {
+      formData.append("angle", angle);
+    } else if (type === "pdf-merge-split") {
+      formData.append("mode", mode);
+    } else if (type === "pdf-watermark") {
+      formData.append("text", watermarkText);
+    } else if (type === "pdf-encrypt") {
+      formData.append("password", pdfPassword);
+    } else if (type === "ocr") {
+      // e.g. formData.append("lang", "eng");
     }
 
     try {
-      console.log(
-        "✅ 변환 요청 전송:",
-        `${process.env.NEXT_PUBLIC_API_URL}/api/${type}`
-      );
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/${type}`,
-        {
-          method: "POST",
-          body: formData,
-        }
-      );
+      const res = await fetch(endpoint, {
+        method: "POST",
+        body: formData,
+      });
+      if (!res.ok) throw new Error(`서버오류: ${res.status}`);
 
-      if (!response.ok) {
-        throw new Error(`서버 응답 오류: ${response.status}`);
-      }
-
-      const result = await response.json();
-      console.log("✅ 백엔드 응답 데이터:", result);
-
-      stopProgressSimulation();
+      const result = await res.json();
+      stopProgress();
       setProgress(100);
 
-      // ─────────────────────────────────────────────────
-      // result에 따라 downloadData 세팅
-      // ─────────────────────────────────────────────────
-      // 백엔드가 fileNames와 downloadUrls 모두 준 경우
-      if (result.fileNames && result.downloadUrls) {
-        const combinedData = result.downloadUrls.map((url, idx) => ({
-          url: `${process.env.NEXT_PUBLIC_API_URL}${url}`,
-          name: result.fileNames[idx], // 원본 파일명
-        }));
-        setDownloadData(combinedData);
-      }
-      // 백엔드가 downloadUrl만 준 경우(단일 파일)
-      else if (result.downloadUrl) {
+      // 응답 처리
+      if (result.downloadUrl) {
+        // 단일 URL일 경우, 문자열 파싱
+        const rawUrl = result.downloadUrl;
+        const filename = rawUrl.split("/").pop() || "결과파일";
+        const cleanedName = filename.replace(/^[a-f0-9-]+_/, "");
         setDownloadData([
           {
-            url: `${process.env.NEXT_PUBLIC_API_URL}${result.downloadUrl}`,
-            name: "변환된 파일", // 임시 표기
+            url: `${process.env.NEXT_PUBLIC_API_URL}${rawUrl}`,
+            name: cleanedName,
           },
         ]);
-      }
-      // 백엔드가 downloadUrls만 준 경우(다중 파일)
-      else if (result.downloadUrls) {
-        setDownloadData(
-          result.downloadUrls.map((url, index) => ({
-            url: `${process.env.NEXT_PUBLIC_API_URL}${url}`,
-            name: `파일 ${index + 1}`, // 임시 표기
-          }))
-        );
+      } else if (result.downloadUrls) {
+        // 다중 URL
+        const dataArr = result.downloadUrls.map((rawUrl) => {
+          const filename = rawUrl.split("/").pop() || "결과파일";
+          const cleanedName = filename.replace(/^[a-f0-9-]+_/, "");
+          return {
+            url: `${process.env.NEXT_PUBLIC_API_URL}${rawUrl}`,
+            name: cleanedName,
+          };
+        });
+        setDownloadData(dataArr);
+      } else if (result.recognizedText) {
+        alert(`OCR 인식 결과: \n${result.recognizedText}`);
       } else {
-        console.error("❌ 변환 실패:", result);
-        alert("변환에 실패했습니다.");
-        setProgress(0);
+        console.warn("알 수 없는 응답 형식:", result);
+        setDownloadData([]);
       }
-    } catch (error) {
-      console.error("❌ 변환 요청 실패:", error);
-      alert(`변환 요청 중 오류가 발생했습니다: ${error.message}`);
-      stopProgressSimulation();
+    } catch (err) {
+      console.error("작업 실패:", err);
+      setToastMsg(`작업 실패: ${err.message}`); // ← 토스트로 에러 표시
+      stopProgress();
       setProgress(0);
     } finally {
       setTimeout(() => setIsConverting(false), 500);
     }
   };
 
-  // ─────────────────────────────────────────────────────
-  // 렌더링
-  // ─────────────────────────────────────────────────────
   return (
     <Layout>
-      {/* 제목 */}
-      <h1
-        style={{
-          fontSize: "28px",
-          fontWeight: "bold",
-          marginBottom: "20px",
-          textAlign: "center",
-        }}
-      >
-        {type
-          ? type.replace(/^to-/, "").toUpperCase() + "로 변환"
-          : "로딩 중..."}
+      {/* Toast 컴포넌트 삽입 (맨 위에) */}
+      <Toast message={toastMsg} onClose={handleCloseToast} />
+
+      <h1 style={{ textAlign: "center", marginTop: "30px" }}>
+        {type ? `${type}` : "로딩 중..."}
       </h1>
 
-      {/* 변환 가능한 파일 유형 안내 */}
+      {/* 업로드 파일 형식 안내 */}
       {allowedFormats[type] && (
         <p
           style={{
@@ -276,233 +261,191 @@ export default function ConvertPage() {
         </p>
       )}
 
-      {/* 드롭존 (파일 리스트 포함) */}
-      <div
-        {...getRootProps()}
-        style={{
-          boxSizing: "border-box",
-          width: "100%",
-          maxWidth: "770px",
-          margin: "0 auto 20px",
-          border: "2px dashed #007bff",
-          padding: "30px",
-          cursor: "pointer",
-          background: "#f8f9fa",
-          borderRadius: "12px",
-          transition: "border 0.3s, background 0.3s",
-          textAlign: "center",
-          fontSize: "20px",
-          color: "#007bff",
-          fontWeight: "bold",
-          minHeight: "50px",
-          height: selectedFiles.length > 0 ? "auto" : "150px",
-          overflowY: "auto",
-          maxHeight: "400px",
-          display: selectedFiles.length === 0 ? "flex" : "block",
-          alignItems: "center",
-          justifyContent: "center",
-        }}
-        onMouseEnter={(e) => (e.target.style.background = "#e9f5ff")}
-        onMouseLeave={(e) => (e.target.style.background = "#f8f9fa")}
-      >
-        <input {...inputProps} />
+      <DropzoneSection
+        selectedFiles={selectedFiles}
+        setSelectedFiles={setSelectedFiles}
+      />
 
-        {selectedFiles.length === 0 ? (
-          <p style={{ margin: 0, background: "transparent" }}>
-            파일을 드래그하거나 클릭하여 선택하세요.
-          </p>
-        ) : (
-          <ul
-            onMouseEnter={(e) => e.stopPropagation()}
-            onMouseLeave={(e) => e.stopPropagation()}
-            style={{ padding: 0, margin: 0, listStyle: "none" }}
+      {/* PDF 옵션들 */}
+      <div style={{ maxWidth: "600px", margin: "20px auto" }}>
+        {type === "pdf-rotate" && (
+          <div
+            style={{
+              marginBottom: "20px",
+              background: "#f0f0f0",
+              padding: "15px",
+              borderRadius: "6px",
+            }}
           >
-            {selectedFiles.map((file, index) => (
-              <li
-                key={index}
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  padding: "10px 15px",
-                  background: "#ffffff",
-                  borderRadius: "6px",
-                  marginBottom: "8px",
-                  boxShadow: "0px 2px 4px rgba(0,0,0,0.05)",
-                }}
-              >
-                <span style={{ color: "#555", fontSize: "14px" }}>
-                  {file.name}
-                </span>
-                <button
-                  style={{
-                    border: "none",
-                    background: "none",
-                    color: "red",
-                    cursor: "pointer",
-                    fontSize: "16px",
-                  }}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleRemoveFile(index);
-                  }}
-                >
-                  ✕
-                </button>
-              </li>
-            ))}
-          </ul>
+            <h3>PDF 회전</h3>
+            <label>
+              각도:
+              <input
+                type="number"
+                value={angle}
+                onChange={(e) => setAngle(parseInt(e.target.value, 10))}
+                style={{ marginLeft: "8px", width: "80px" }}
+              />
+            </label>
+          </div>
+        )}
+
+        {type === "pdf-merge-split" && (
+          <div
+            style={{
+              marginBottom: "20px",
+              background: "#f0f0f0",
+              padding: "15px",
+              borderRadius: "6px",
+            }}
+          >
+            <h3>PDF 병합/분할</h3>
+            <div>
+              <label>
+                <input
+                  type="radio"
+                  checked={mode === "merge"}
+                  onChange={() => setMode("merge")}
+                />
+                병합 (여러 PDF 업로드)
+              </label>
+            </div>
+            <div>
+              <label>
+                <input
+                  type="radio"
+                  checked={mode === "split"}
+                  onChange={() => setMode("split")}
+                />
+                분할 (한 개 PDF 업로드)
+              </label>
+            </div>
+          </div>
+        )}
+
+        {type === "pdf-watermark" && (
+          <div
+            style={{
+              marginBottom: "20px",
+              background: "#f0f0f0",
+              padding: "15px",
+              borderRadius: "6px",
+            }}
+          >
+            <h3>PDF 워터마크</h3>
+            <label>
+              텍스트:
+              <input
+                type="text"
+                value={watermarkText}
+                onChange={(e) => setWatermarkText(e.target.value)}
+                style={{ marginLeft: "8px", width: "200px" }}
+              />
+            </label>
+          </div>
+        )}
+
+        {type === "pdf-encrypt" && (
+          <div
+            style={{
+              marginBottom: "20px",
+              background: "#f0f0f0",
+              padding: "15px",
+              borderRadius: "6px",
+            }}
+          >
+            <h3>PDF 암호화</h3>
+            <label>
+              비밀번호:
+              <input
+                type="text"
+                value={pdfPassword}
+                onChange={(e) => setPdfPassword(e.target.value)}
+                style={{ marginLeft: "8px", width: "120px" }}
+              />
+            </label>
+          </div>
+        )}
+
+        {type === "ocr" && (
+          <div
+            style={{
+              marginBottom: "20px",
+              background: "#f0f0f0",
+              padding: "15px",
+              borderRadius: "6px",
+            }}
+          >
+            <h3>이미지 OCR</h3>
+            <p>이미지 → 텍스트 변환</p>
+          </div>
         )}
       </div>
 
-      {/* 변환 옵션 */}
-      {isConversionRequired && (
-        <ConvertOptions
-          conversionType={conversionType}
-          setConversionType={setConversionType}
-        />
-      )}
-
-      {/* 변환 버튼 */}
       {selectedFiles.length > 0 && !isConverting && (
         <button
           onClick={handleConvert}
           style={{
             display: "block",
-            width: "120px",
-            height: "40px",
             margin: "0 auto",
-            padding: "0px 0px 0px 0px",
-            fontSize: "18px",
-            border: "none",
-            borderRadius: "8px",
+            padding: "12px 20px",
+            fontSize: "16px",
             background: "#007bff",
             color: "#fff",
+            border: "none",
+            borderRadius: "6px",
             cursor: "pointer",
-            fontWeight: "bold",
-            boxShadow: "0px 4px 6px rgba(0,0,0,0.1)",
-            transition: "background 0.3s, transform 0.2s",
           }}
-          onMouseEnter={(e) => (e.target.style.background = "#0056b3")}
-          onMouseLeave={(e) => (e.target.style.background = "#007bff")}
         >
-          변환하기
+          실행하기
         </button>
       )}
 
-      {/* 변환 진행률 */}
-      {isConverting && (
-        <div style={{ maxWidth: "600px", margin: "20px auto" }}>
-          <div style={{ background: "#eee", borderRadius: "6px" }}>
-            <div
-              style={{
-                width: `${progress}%`,
-                background: "#007bff",
-                height: "12px",
-                borderRadius: "6px",
-                transition: "width 0.3s ease",
-              }}
-            />
-          </div>
-          <p
-            style={{ fontSize: "16px", marginTop: "10px", textAlign: "center" }}
-          >
-            변환 진행률: {progress}%
-          </p>
-        </div>
-      )}
+      {isConverting && <ProgressBar progress={progress} />}
 
-      {/* 다운로드 목록 */}
       {downloadData.length > 0 && (
         <div
           style={{
-            boxSizing: "border-box",
             width: "100%",
-            maxWidth: "770px",
+            maxWidth: "600px",
             margin: "20px auto",
             border: "2px dashed #28a745",
-            padding: "30px",
-            background: "#f8f9fa",
+            padding: "20px",
             borderRadius: "12px",
-            transition: "border 0.3s, background 0.3s",
             textAlign: "center",
-            fontSize: "16px",
-            color: "#28a745",
-            fontWeight: "bold",
           }}
         >
-          <ul style={{ padding: 0, margin: 0, listStyle: "none" }}>
-            {downloadData.map((file, index) => (
+          <ul style={{ listStyle: "none", padding: 0 }}>
+            {downloadData.map((file, idx) => (
               <li
-                key={index}
+                key={idx}
                 style={{
                   display: "flex",
                   justifyContent: "space-between",
                   alignItems: "center",
-                  padding: "10px 15px",
+                  padding: "8px",
                   background: "#ffffff",
                   borderRadius: "6px",
-                  marginBottom: "8px",
-                  boxShadow: "0px 2px 4px rgba(0,0,0,0.05)",
+                  marginBottom: "6px",
                 }}
               >
-                <span style={{ color: "#555", fontSize: "14px" }}>
-                  {/* 원본 파일명 혹은 임시 이름 */}
-                  {file.name || `파일 ${index + 1}`}
-                </span>
+                <span style={{ color: "#555" }}>{file.name}</span>
                 <a
-                  href={encodeURI(file.url)}
+                  href={file.url}
                   download
                   style={{
-                    padding: "8px 12px",
                     background: "#28a745",
                     color: "#fff",
+                    padding: "6px 12px",
                     borderRadius: "6px",
                     textDecoration: "none",
-                    fontWeight: "bold",
-                    transition: "background 0.3s",
                   }}
-                  onMouseEnter={(e) => (e.target.style.background = "#218838")}
-                  onMouseLeave={(e) => (e.target.style.background = "#28a745")}
                 >
                   다운로드
                 </a>
               </li>
             ))}
           </ul>
-          {/* 전체 다운로드 버튼 */}
-          <button
-            onClick={() => {
-              downloadData.forEach((file, index) => {
-                setTimeout(() => {
-                  const link = document.createElement("a");
-                  link.href = encodeURI(file.url);
-                  link.download = file.name || `파일${index + 1}`;
-                  document.body.appendChild(link);
-                  link.click();
-                  document.body.removeChild(link);
-                }, 500 * index);
-              });
-            }}
-            style={{
-              marginTop: "20px",
-              padding: "10px 15px",
-              fontSize: "16px",
-              width: "120px",
-              height: "40px",
-              background: "#28a745",
-              color: "#fff",
-              borderRadius: "6px",
-              border: "none",
-              cursor: "pointer",
-              fontWeight: "bold",
-              transition: "background 0.3s",
-            }}
-            onMouseEnter={(e) => (e.target.style.background = "#218838")}
-            onMouseLeave={(e) => (e.target.style.background = "#28a745")}
-          >
-            전체 다운로드
-          </button>
         </div>
       )}
     </Layout>

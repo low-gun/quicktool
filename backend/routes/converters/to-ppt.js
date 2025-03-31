@@ -77,11 +77,11 @@ router.post("/", upload.single("file"), async (req, res) => {
 
       // pdf2pic 옵션
       const pdfOptions = {
-        density: 100,
+        density: 80,
         savePath: pdfImageDir,
         format: "jpg",
         saveFilename: finalNameWithoutUUID,
-        quality: 100,
+        quality: 80,
       };
 
       try {
