@@ -22,7 +22,7 @@ export default function NotesPage() {
       return;
     }
     fetchNotes(token);
-  }, []);
+  }, [router]);
 
   // 토스트 닫기
   const handleCloseToast = () => setToastMsg("");
